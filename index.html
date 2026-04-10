@@ -25,7 +25,7 @@
                 <div class="bg-bstk-red text-white font-black px-3 py-1 rounded-lg text-sm italic shadow-md">BSTK</div>
                 <h1 class="text-lg font-black text-slate-800 tracking-tight">LT WG 실적 확인</h1>
             </div>
-            <div id="status" class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100 uppercase italic">Strict Filter Active</div>
+            <div id="status" class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100 uppercase italic tracking-widest">Auto-Detection Active</div>
         </div>
     </header>
 
@@ -42,11 +42,11 @@
                 </div>
             </div>
             <div class="flex items-center gap-3">
-                <span class="text-xs font-black text-slate-400 uppercase tracking-widest">패턴 선택</span>
+                <span class="text-xs font-black text-slate-400 uppercase tracking-widest">패턴 필터</span>
                 <div class="flex gap-1.5">
-                    <button onclick="setFilter('pattern', 'ALL')" id="pt-ALL" class="filter-btn filter-active px-5 py-2 rounded-xl text-xs font-bold">전체</button>
-                    <button onclick="setFilter('pattern', 'RS002')" id="pt-RS002" class="filter-btn filter-inactive px-5 py-2 rounded-xl text-xs font-bold">RS002</button>
-                    <button onclick="setFilter('pattern', 'RD002')" id="pt-RD002" class="filter-btn filter-inactive px-5 py-2 rounded-xl text-xs font-bold">RD002</button>
+                    <button onclick="setFilter('pattern', 'ALL')" id="pt-ALL" class="filter-btn filter-active px-4 py-2 rounded-xl text-xs font-bold">전체</button>
+                    <button onclick="setFilter('pattern', 'RS002')" id="pt-RS002" class="filter-btn filter-inactive px-4 py-2 rounded-xl text-xs font-bold">RS002</button>
+                    <button onclick="setFilter('pattern', 'RD002')" id="pt-RD002" class="filter-btn filter-inactive px-4 py-2 rounded-xl text-xs font-bold">RD002</button>
                 </div>
             </div>
         </div>
@@ -58,7 +58,7 @@
                     <span id="ytd-val" class="text-6xl font-black tracking-tighter">0</span>
                     <span class="text-slate-300 font-bold text-xl">본</span>
                 </div>
-                <p class="text-[10px] text-slate-400 font-bold italic">* 경영계획 제외 / LSR2 & 17.5down 합계</p>
+                <p class="text-[10px] text-slate-400 font-bold italic">* 실판매 전용 (경영계획 및 반품 제외)</p>
             </div>
 
             <div class="bg-white p-8 rounded-[2.5rem] card-shadow border border-slate-100 border-t-4 border-t-red-500">
@@ -76,24 +76,21 @@
                     <div id="attainment-bar" class="bg-emerald-400 h-full transition-all duration-1000" style="width: 0%"></div>
                 </div>
                 <p class="text-[10px] text-slate-300 italic">
-                    <span class="text-white font-bold underline decoration-red-500 underline-offset-4">비교 기준:</span> RS/RD는 신제품이므로, 과거의 모든 동일 사이즈 제품(R156 등) 전체 실적의 5년 평균 페이스와 비교합니다.
+                    <span class="text-white font-bold underline decoration-red-500 underline-offset-4">기준:</span> 과거 5년 동기 평균 실적 대비 현재 성과
                 </p>
             </div>
         </div>
 
         <div class="bg-white rounded-[2.5rem] card-shadow border border-slate-100 overflow-hidden">
             <div class="px-8 py-6 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
-                <div class="flex items-center gap-3">
-                    <h3 class="font-black text-slate-800 italic">딜러별 판매추이</h3>
-                    <span class="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[9px] font-black uppercase border border-blue-100 animate-pulse">딜러명 클릭 시 상세 전개</span>
-                </div>
+                <h3 class="font-black text-slate-800 italic">딜러별 판매추이</h3>
                 <span class="text-[10px] font-bold text-slate-400 uppercase">정렬: 누적 판매량 순</span>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left whitespace-nowrap min-w-[800px]">
                     <thead>
                         <tr class="bg-white text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
-                            <th class="px-10 py-5">딜러명 (클릭 시 상세)</th>
+                            <th class="px-10 py-5">딜러명 (클릭)</th>
                             <th class="px-8 py-5 text-right">당월 판매</th>
                             <th class="px-8 py-5 text-right bg-slate-50/30 text-slate-900 font-black">2026 누계</th>
                             <th class="px-8 py-5 text-right font-black">5년 평균비</th>
@@ -114,24 +111,24 @@
 
         let rawCurrent = [], rawHistory = [], filterSize = 'ALL', filterPattern = 'ALL', currentMonthNum = 1;
 
-        // **사진 근거 정밀 필터링 로직**
-        const isStrictLSR = (row, h) => {
+        // **정밀 필터링 로직: LSR2 + 17.5DOWN + 경영계획 제외 + 양수 실적만**
+        const isTargetRecord = (row, h) => {
             const mtpIdx = h.findIndex(v => v.includes('MTP분류'));
             const deptIdx = h.findIndex(v => v.includes('이익부서'));
-            const sizeIdx = h.findIndex(v => v.includes('SIZE') || v.includes('사이즈'));
+            const qtyIdx = h.length - 1; // 맨 오른쪽 '합계수량'
             
             const mtp = String(row[mtpIdx] || '').trim();
             const dept = String(row[deptIdx] || '').trim();
-            const size = String(row[sizeIdx] || '').replace(/[^0-9]/g, '');
+            const qty = parseFloat(String(row[qtyIdx] || 0).replace(/,/g, '')) || 0;
 
-            // 1. MTP분류: 사진 필터 리스트와 100% 일치 확인
-            const isTargetMTP = (mtp === 'LSR2' || mtp === 'TBR T/L 17.5 down');
-            // 2. 이익부서: 경영계획 무조건 배제
-            const isNotPlan = dept !== '경영계획';
-            // 3. 규격: 17.5인치 트럭 규격 (205, 215, 225)
-            const isCorrectSize = size.startsWith('20575175') || size.startsWith('21575175') || size.startsWith('22575175');
-            
-            return isTargetMTP && isNotPlan && isCorrectSize;
+            // 1. MTP분류: LSR2 또는 TBR T/L 17.5 down (사진 필터 기준)
+            const isLSR = (mtp === 'LSR2' || mtp === 'TBR T/L 17.5 down');
+            // 2. 이익부서: 경영계획 제외
+            const isNotPlan = (dept !== '경영계획');
+            // 3. 수량: 양수만 (반품 제외)
+            const isPositive = (qty > 0);
+
+            return isLSR && isNotPlan && isPositive;
         };
 
         const matchFilterSize = (s, fs) => fs === 'ALL' || String(s).includes(fs);
@@ -162,29 +159,40 @@
         function processExcel(rows, type) {
             const result = [];
             if(rows.length < 2) return result;
-            const h = rows[0].map(v => String(v||'').toUpperCase().replace(/\s/g, ''));
+            const h = rows[0].map(v => String(v||'').trim());
             const idxD = h.findIndex(v => v.includes('거래처'));
             const idxS = h.findIndex(v => v.includes('SIZE') || v.includes('사이즈'));
             const idxP = h.findIndex(v => v.includes('PTTN') || v.includes('패턴'));
             
             if(type === 'current') {
-                const idxY = h.findIndex(v => v.includes('합계수량'));
-                let idxM = -1;
-                for(let i=h.length-1; i>=0; i--) { if(h[i].includes('QTY')){ idxM = i; break; } }
-                
+                const idxYTD = h.length - 1; // 맨 오른쪽 '합계수량' 인식
+                let idxMth = -1;
+                // 월별 QTY 열 자동 인식 (현재 월 기반)
+                for(let i=0; i<h.length; i++) {
+                    if(h[i] === 'QTY') {
+                        const prevCol = String(h[i-1] || '');
+                        if(prevCol.includes(`-${currentMonthNum < 10 ? '0' + currentMonthNum : currentMonthNum}`)) {
+                            idxMth = i; break;
+                        }
+                    }
+                }
+                // 못 찾으면 가장 최근 QTY 사용
+                if(idxMth === -1) {
+                    for(let i=h.length-1; i>=0; i--) { if(h[i]==='QTY'){ idxMth = i; break; } }
+                }
+
                 for(let i=1; i<rows.length; i++) {
                     const r = rows[i];
-                    if(!r || !isStrictLSR(r, h)) continue;
-                    const yVal = Math.max(0, parseFloat(String(r[idxY]||0).replace(/,/g,'')) || 0);
-                    const mVal = Math.max(0, parseFloat(String(r[idxM]||0).replace(/,/g,'')) || 0);
-                    if(yVal > 0) result.push({ d: String(r[idxD]||'기타').trim(), s: r[idxS], p: r[idxP], y: yVal, m: mVal });
+                    if(!r || !isTargetRecord(r, h)) continue;
+                    const yVal = parseFloat(String(r[idxYTD]||0).replace(/,/g,'')) || 0;
+                    const mVal = parseFloat(String(r[idxMth]||0).replace(/,/g,'')) || 0;
+                    result.push({ d: String(r[idxD]||'기타').trim(), s: r[idxS], p: r[idxP], y: yVal, m: mVal });
                 }
             } else {
                 const idxA = h.findIndex(v => v.includes('5년평균'));
                 for(let i=1; i<rows.length; i++) {
                     const r = rows[i];
-                    const size = String(r[idxS]||'').replace(/[^0-9]/g, '');
-                    if(!r || !(size.startsWith('20575175') || size.startsWith('21575175') || size.startsWith('22575175'))) continue;
+                    if(!r || !String(r[idxS]).includes('17.5')) continue;
                     result.push({ d: String(r[idxD]||'기타').trim(), s: r[idxS], p: r[idxP], a: parseFloat(r[idxA]||0) });
                 }
             }
@@ -208,22 +216,20 @@
 
             let sY = 0, sM = 0, sA = 0;
             const dMap = {};
-
             cur.forEach(r => {
                 sY += r.y; sM += r.m;
                 if(!dMap[r.d]) dMap[r.d] = { y:0, m:0, a:0, details:[] };
                 dMap[r.d].y += r.y; dMap[r.d].m += r.m;
                 dMap[r.d].details.push(r);
             });
-
             his.forEach(r => {
                 const tA = (r.a/12)*currentMonthNum;
                 sA += tA;
-                if(dMap[r.d]) { dMap[r.d].a += tA; }
+                if(dMap[r.d]) dMap[r.d].a += tA;
             });
 
-            document.getElementById('ytd-val').innerText = sY.toLocaleString();
-            document.getElementById('month-val').innerText = sM.toLocaleString();
+            document.getElementById('ytd-val').innerText = Math.round(sY).toLocaleString();
+            document.getElementById('month-val').innerText = Math.round(sM).toLocaleString();
             const pct = sA > 0 ? Math.round((sY/sA)*100) : 0;
             document.getElementById('attainment-pct').innerText = pct + "%";
             document.getElementById('attainment-bar').style.width = Math.min(pct, 100) + "%";
@@ -236,12 +242,12 @@
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-50 cursor-pointer" onclick="toggleRow('${detailId}')">
                         <td class="px-10 py-5 text-slate-700 font-bold flex items-center gap-2"><span class="text-blue-500 bg-blue-50 rounded w-4 h-4 flex items-center justify-center text-[10px]">+</span> ${n}</td>
-                        <td class="px-8 py-5 text-right text-slate-400 font-medium">${d.m.toLocaleString()}</td>
-                        <td class="px-8 py-5 text-right bg-slate-50/30 bstk-red font-black text-base">${d.y.toLocaleString()}</td>
+                        <td class="px-8 py-5 text-right text-slate-400 font-medium">${Math.round(d.m).toLocaleString()}</td>
+                        <td class="px-8 py-5 text-right bg-slate-50/30 bstk-red font-black text-base">${Math.round(d.y).toLocaleString()}</td>
                         <td class="px-8 py-5 text-right font-black ${dPct >= 100 ? 'text-emerald-600' : 'text-slate-500'}">${dPct}%</td>
                     </tr>
                     <tr id="${detailId}" class="hidden bg-slate-50/50">
-                        <td colspan="4" class="px-10 py-4"><div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"><table class="w-full text-xs text-left"><thead><tr class="text-slate-400 border-b border-slate-100"><th class="pb-2">규격 & 패턴</th><th class="pb-2 text-right">누적 판매</th></tr></thead><tbody class="divide-y divide-slate-50">${d.details.map(det => `<tr><td class="py-2"><strong>${det.s}</strong> <span class="text-slate-400">${det.p}</span></td><td class="py-2 text-right bstk-red font-bold">${det.y.toLocaleString()}</td></tr>`).join('')}</tbody></table></div></td></tr>`;
+                        <td colspan="4" class="px-10 py-4"><div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"><table class="w-full text-xs text-left"><thead><tr class="text-slate-400 border-b border-slate-100"><th class="pb-2">상세 규격 & 패턴</th><th class="pb-2 text-right">누적 판매</th></tr></thead><tbody class="divide-y divide-slate-50">${d.details.map(det => `<tr><td class="py-2"><strong>${det.s}</strong> <span class="text-slate-400">${det.p}</span></td><td class="py-2 text-right bstk-red font-bold">${Math.round(det.y).toLocaleString()}</td></tr>`).join('')}</tbody></table></div></td></tr>`;
             });
         }
         window.onload = init;
