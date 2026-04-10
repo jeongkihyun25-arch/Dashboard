@@ -1,88 +1,89 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BSTK Dashboard</title>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdn.tailwindcss.com"></script>
-
-<style>
-body { font-family: sans-serif; background:#f8fafc; }
-.red { color:#E30613; }
-.active { background:#1e293b; color:white; }
-.inactive { background:white; color:#64748b; border:1px solid #e2e8f0; }
-</style>
-</head>
-
-<body class="p-6">
-
-<h1 class="text-xl font-bold mb-4">17.5인치 실적</h1>
-
-<select id="month" onchange="changeMonth()" class="border p-2 mb-4"></select>
-
-<div class="mb-4">
-<button onclick="setFilter('ALL')" id="f-ALL" class="active px-3 py-1">전체</button>
-<button onclick="setFilter('205')" id="f-205" class="inactive px-3 py-1">205</button>
-<button onclick="setFilter('215')" id="f-215" class="inactive px-3 py-1">215</button>
-<button onclick="setFilter('225')" id="f-225" class="inactive px-3 py-1">225</button>
-</div>
-
-<div class="grid grid-cols-3 gap-4 mb-6">
-<div><p>누계</p><div id="ytd" class="text-3xl red">0</div></div>
-<div><p>당월</p><div id="monthVal" class="text-3xl">0</div></div>
-<div><p>딜러수</p><div id="cnt" class="text-3xl">0</div></div>
-</div>
-
-<table class="w-full text-sm">
-<thead>
-<tr>
-<th class="text-left">딜러</th>
-<th class="text-right">당월</th>
-<th class="text-right">누계</th>
-</tr>
-</thead>
-<tbody id="list"></tbody>
-</table>
-
 <script>
+const GITHUB_USER = "jeongkihyun25-arch";
+const REPO_NAME = "Dashboard";
 
-const URL = "https://raw.githubusercontent.com/jeongkihyun25-arch/Dashboard/main/current_sales.xls?t=" + Date.now();
+const URL_CURR = `https://raw.githubusercontent.com/${GITHUB_USER}/${REPO_NAME}/main/current_sales.xls?t=${Date.now()}`;
+const URL_HIST = `https://raw.githubusercontent.com/${GITHUB_USER}/${REPO_NAME}/main/historical_data.xlsx?t=${Date.now()}`;
 
-let raw = [];
-let filter = 'ALL';
-let selectedMonth = null;
+let rawCurrent = [];
+let rawHistory = [];
+
+let filterSize = 'ALL';
+let filterPattern = 'ALL';
+let selectedMonth = 1;
 let availableMonths = [];
 
-async function load(){
 
-    const res = await fetch(URL);
-    const ab = await res.arrayBuffer();
-    const wb = XLSX.read(new Uint8Array(ab), {type:'array'});
-    const sheet = wb.Sheets[wb.SheetNames[0]];
+// 🔥 공통 숫자 처리
+const num = v => parseFloat(String(v||'0').replace(/,/g,'')) || 0;
+
+
+// 🔥 대상 필터 (기존 유지 + 안정화)
+const isStrictTarget = (row, header) => {
+    const mtpIdx = header.findIndex(v => String(v).includes('MTP'));
+    const deptIdx = header.findIndex(v => String(v).includes('이익부서'));
+    const sizeIdx = header.findIndex(v => String(v).includes('SIZE') || String(v).includes('사이즈'));
+
+    if (mtpIdx === -1 || sizeIdx === -1) return false;
+
+    const mtp = String(row[mtpIdx] || '').toUpperCase();
+    const size = String(row[sizeIdx] || '');
+    const dept = deptIdx !== -1 ? String(row[deptIdx] || '') : '';
+
+    if (size.includes('235')) return false;
+    if (dept.includes('경영계획')) return false;
+
+    return mtp.includes('17.5') || mtp === 'LSR2';
+};
+
+
+// 🔥 메인 로드
+async function loadData() {
+    try {
+        const [cRes, hRes] = await Promise.all([fetch(URL_CURR), fetch(URL_HIST)]);
+        const cAb = await cRes.arrayBuffer();
+        const hAb = await hRes.arrayBuffer();
+
+        const cWb = XLSX.read(new Uint8Array(cAb), {type:'array'});
+        const hWb = XLSX.read(new Uint8Array(hAb), {type:'array'});
+
+        rawCurrent = processCurrent(cWb.Sheets[cWb.SheetNames[0]]);
+        rawHistory = processHistory(hWb.Sheets[hWb.SheetNames[0]]);
+
+        // 🔥 최신 월 자동 선택
+        selectedMonth = Math.max(...availableMonths);
+
+        initMonthSelector();
+        render();
+
+    } catch(e){
+        console.error(e);
+        alert("파일 로드 실패");
+    }
+}
+
+
+// 🔥 current 처리 (핵심)
+function processCurrent(sheet){
 
     const rows = XLSX.utils.sheet_to_json(sheet,{header:1});
-    const header = rows[0].map(v=>String(v||'').trim());
+    const h = rows[0].map(v=>String(v||'').trim());
 
-    const idxDealer = header.findIndex(v=>v.includes('거래처')||v.includes('딜러'));
-    const idxSize = header.findIndex(v=>v.includes('SIZE')||v.includes('사이즈'));
+    const idxD = h.findIndex(v=>v.includes('거래처')||v.includes('딜러'));
+    const idxS = h.findIndex(v=>v.includes('SIZE')||v.includes('사이즈'));
+    const idxP = h.findIndex(v=>v.includes('PTTN')||v.includes('패턴'));
 
-    // 🔥 월 자동 탐색
+    // 🔥 월 컬럼 미리 전부 찾기 (성능 핵심)
     const monthCols = {};
 
-    header.forEach((v,i)=>{
+    h.forEach((v,i)=>{
         const txt = String(v).replace(/\s+/g,'');
         const match = txt.match(/2026[-\/]?(\d{1,2})/);
 
         if(match){
             const m = parseInt(match[1]);
 
-            if(
-                txt.includes('QTY') ||
-                txt.includes('수량') ||
-                txt.includes('판매')
-            ){
+            if(txt.includes('QTY') || txt.includes('수량') || txt.includes('판매')){
                 monthCols[m] = i;
             }
         }
@@ -90,25 +91,17 @@ async function load(){
 
     availableMonths = Object.keys(monthCols).map(Number).sort((a,b)=>a-b);
 
-    // 👉 최신 월 자동 선택
-    selectedMonth = Math.max(...availableMonths);
-
-    raw = [];
+    const result = [];
 
     for(let i=1;i<rows.length;i++){
         const r = rows[i];
-        if(!r) continue;
-
-        const size = String(r[idxSize]||'');
-        if(size.includes('235')) continue;
-
-        const dealer = String(r[idxDealer]||'기타');
+        if(!r || !isStrictTarget(r,h)) continue;
 
         let y = 0;
         const monthly = {};
 
         availableMonths.forEach(m=>{
-            let val = parseFloat(String(r[monthCols[m]]||'0').replace(/,/g,''))||0;
+            let val = num(r[monthCols[m]]);
 
             // 🔥 마이너스 제거
             if(val < 0) val = 0;
@@ -119,85 +112,139 @@ async function load(){
 
         if(y <= 0) continue;
 
-        raw.push({dealer,size,monthly,y});
+        result.push({
+            d: String(r[idxD]||'기타').trim(),
+            s: String(r[idxS]||''),
+            p: String(r[idxP]||''),
+            y,
+            monthly
+        });
     }
 
-    initMonth();
-    render();
+    return result;
 }
 
-function initMonth(){
-    const sel = document.getElementById('month');
+
+// 🔥 history 처리 (그대로 유지)
+function processHistory(sheet){
+    const rows = XLSX.utils.sheet_to_json(sheet,{header:1});
+    const h = rows[0];
+
+    const idxS = h.findIndex(v=>String(v).includes('사이즈'));
+    const idxAvg = h.findIndex(v=>String(v).includes('5년'));
+
+    return rows.slice(1).map(r=>({
+        d: String(r[0]||''),
+        a: num(r[idxAvg])
+    })).filter(r=>!String(r[idxS]).includes('235'));
+}
+
+
+// 🔥 월 선택
+function initMonthSelector(){
+    const sel = document.getElementById('month-select');
     sel.innerHTML='';
 
     availableMonths.forEach(m=>{
-        const o=document.createElement('option');
-        o.value=m;
-        o.textContent=m+'월';
-        if(m===selectedMonth) o.selected=true;
-        sel.appendChild(o);
+        const opt=document.createElement('option');
+        opt.value=m;
+        opt.textContent=m+'월';
+        if(m===selectedMonth) opt.selected=true;
+        sel.appendChild(opt);
     });
 }
 
-function changeMonth(){
-    selectedMonth = parseInt(document.getElementById('month').value);
+window.changeMonth = function(){
+    selectedMonth = parseInt(document.getElementById('month-select').value);
     render();
-}
+};
 
-function setFilter(v){
-    filter = v;
 
-    ['ALL','205','215','225'].forEach(x=>{
-        document.getElementById('f-'+x).className =
-        x===v ? 'active px-3 py-1' : 'inactive px-3 py-1';
-    });
-
-    render();
-}
-
+// 🔥 렌더 (고급)
 function render(){
 
-    const data = raw.filter(d=>{
-        return filter==='ALL' || d.size.includes(filter);
+    const cur = rawCurrent.filter(r=>
+        (filterSize==='ALL'||r.s.includes(filterSize)) &&
+        (filterPattern==='ALL'||
+         (filterPattern==='RS002' && r.p.toUpperCase().includes('STEER'))||
+         (filterPattern==='RD002' && r.p.toUpperCase().includes('DRIVE')))
+    );
+
+    let totalYTD=0,totalMonth=0,totalPrev=0,total5yr=0;
+    const dealerMap={};
+
+    cur.forEach(r=>{
+        const m = r.monthly[selectedMonth]||0;
+        const prev = r.monthly[selectedMonth-1]||0;
+
+        totalYTD += r.y;
+        totalMonth += m;
+        totalPrev += prev;
+
+        if(!dealerMap[r.d]) dealerMap[r.d]={y:0,m:0,p:0,a:0,details:[]};
+
+        dealerMap[r.d].y+=r.y;
+        dealerMap[r.d].m+=m;
+        dealerMap[r.d].p+=prev;
+        dealerMap[r.d].details.push({...r,m});
     });
 
-    let totalY=0,totalM=0;
-    const map={};
-
-    data.forEach(d=>{
-        const mVal = d.monthly[selectedMonth]||0;
-
-        totalY += d.y;
-        totalM += mVal;
-
-        if(!map[d.dealer]) map[d.dealer]={y:0,m:0};
-
-        map[d.dealer].y += d.y;
-        map[d.dealer].m += mVal;
+    rawHistory.forEach(r=>{
+        total5yr += r.a;
+        if(dealerMap[r.d]) dealerMap[r.d].a+=r.a;
     });
 
-    document.getElementById('ytd').innerText = Math.round(totalY).toLocaleString();
-    document.getElementById('monthVal').innerText = Math.round(totalM).toLocaleString();
-    document.getElementById('cnt').innerText = Object.keys(map).length;
+    document.getElementById('ytd-val').innerText = Math.round(totalYTD).toLocaleString();
+    document.getElementById('month-val').innerText = Math.round(totalMonth).toLocaleString();
+    document.getElementById('cum-month').innerText = selectedMonth;
+    document.getElementById('month-label').innerText = `${selectedMonth}월 실적`;
 
-    const tbody = document.getElementById('list');
+    const pct = total5yr>0 ? Math.round(totalYTD/total5yr*100) : 0;
+    document.getElementById('attainment-pct').innerText = pct+"%";
+
+    document.getElementById('row-count').innerText =
+        `딜러 ${Object.keys(dealerMap).length}개 / 누계 ${Math.round(totalYTD).toLocaleString()}`;
+
+    const tbody = document.getElementById('dealer-list');
     tbody.innerHTML='';
 
-    Object.entries(map)
-    .sort((a,b)=>b[1].y-b[1].y)
-    .forEach(([name,val])=>{
-        tbody.innerHTML += `
+    Object.entries(dealerMap)
+    .sort((a,b)=>b[1].y - a[1].y)
+    .forEach(([name,d],idx)=>{
+
+        const growth = d.p>0 ? Math.round((d.m-d.p)/d.p*100) : 0;
+
+        const id=`detail-${idx}`;
+
+        tbody.innerHTML+=`
+        <tr onclick="toggleRow('${id}')" class="hover:bg-slate-50 cursor-pointer">
+            <td class="px-8 py-5 font-semibold">${name}</td>
+            <td class="px-8 py-5 text-right">${Math.round(d.m).toLocaleString()}</td>
+            <td class="px-8 py-5 text-right font-black bstk-red">${Math.round(d.y).toLocaleString()}</td>
+            <td class="px-8 py-5 text-right ${growth>=0?'text-emerald-600':'text-red-500'}">
+                ${growth>=0?'+':''}${growth}%
+            </td>
+        </tr>
+
+        <tr id="${id}" class="hidden bg-slate-50">
+        <td colspan="4" class="px-8 py-4">
+        <div class="bg-white border rounded-2xl p-5 text-xs">
+        <table class="w-full">
+        <thead><tr class="text-slate-400">
+        <th>규격</th><th>패턴</th><th class="text-right">누계</th>
+        </tr></thead>
+        <tbody>
+        ${d.details.map(x=>`
         <tr>
-            <td>${name}</td>
-            <td class="text-right">${Math.round(val.m).toLocaleString()}</td>
-            <td class="text-right red font-bold">${Math.round(val.y).toLocaleString()}</td>
-        </tr>`;
+        <td>${x.s}</td>
+        <td>${x.p}</td>
+        <td class="text-right bstk-red">${Math.round(x.y).toLocaleString()}</td>
+        </tr>`).join('')}
+        </tbody></table>
+        </div></td></tr>`;
     });
 }
 
-load();
 
+window.onload = loadData;
 </script>
-
-</body>
-</html>
