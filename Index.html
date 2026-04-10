@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BSTK 17.5" LSR 모니터링</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+        body { font-family: 'Pretendard', sans-serif; letter-spacing: -0.02em; background-color: #f8fafc; }
+        .bstk-red { color: #E30613; }
+        .bg-bstk-red { background-color: #E30613; }
+        .card-shadow { box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04), 0 8px 10px -6px rgba(0, 0, 0, 0.04); }
+        .truncate-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        /* 테이블 가독성 향상 */
+        th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; }
+    </style>
+</head>
+<body class="text-slate-900 antialiased">
+
+    <header class="sticky top-0 z-50 bg-white border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-4">
+                <div class="bg-bstk-red text-white font-black px-3 py-1 rounded-lg text-sm italic shadow-md">BSTK</div>
+                <h1 class="text-xl font-black text-slate-800 tracking-tight">17.5" LSR 워킹그룹 모니터링</h1>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="text-right hidden sm:block">
+                    <p id="period-text" class="text-[11px] font-bold text-slate-400 uppercase">2026.01 - 04 누계 분석</p>
+                    <p class="text-[10px] text-slate-300">매주 월요일 자동 갱신</p>
+                </div>
+                <div class="h-8 w-[1px] bg-slate-200"></div>
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span class="text-xs font-bold text-slate-500">Connected</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 py-10">
+        
+        <div class="flex mb-10">
+            <div class="bg-slate-200/50 p-1.5 rounded-2xl flex gap-1 shadow-inner">
+                <button onclick="changeView('ALL')" class="px-8 py-2.5 rounded-xl text-sm font-black bg-white shadow-md text-slate-800 transition-all">전체 시장</button>
+                <button onclick="changeView('RS002')" class="px-8 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-900 transition-all">RS002 (Steer)</button>
+                <button onclick="changeView('RD002')" class="px-8 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-900 transition-all">RD002 (Drive)</button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+            <div class="bg-white p-8 rounded-[2.5rem] card-shadow border border-slate-100">
+                <p class="text-[11px] font-bold text-slate-400 uppercase mb-3">누적 실적 현황 (YTD)</p>
+                <div class="flex items-baseline gap-2 mb-6">
+                    <span id="ytd-val" class="text-5xl font-black tracking-tighter">1,420</span>
+                    <span class="text-slate-300 font-bold text-xl">본</span>
+                </div>
+                <div class="flex gap-3">
+                    <div class="bg-slate-50 rounded-2xl p-3 flex-1 border border-slate-100 text-center">
+                        <p class="text-[10px] font-bold text-slate-400 mb-1">작년비</p>
+                        <p class="text-sm font-black text-emerald-600">+12.4% ▲</p>
+                    </div>
+                    <div class="bg-slate-50 rounded-2xl p-3 flex-1 border border-slate-100 text-center">
+                        <p class="text-[10px] font-bold text-slate-400 mb-1">5년 평균비</p>
+                        <p class="text-sm font-black text-bstk-red">+5.2% ▲</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-8 rounded-[2.5rem] card-shadow border border-slate-100 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-full -mr-16 -mt-16 opacity-50"></div>
+                <p class="text-[11px] font-bold text-slate-400 uppercase mb-3">당월 실적 (Current)</p>
+                <div class="flex items-baseline gap-2 mb-6 relative z-10">
+                    <span id="month-val" class="text-5xl font-black tracking-tighter">384</span>
+                    <span class="text-slate-300 font-bold text-xl">본</span>
+                </div>
+                <div class="flex gap-3 relative z-10">
+                    <div class="bg-slate-50 rounded-2xl p-3 flex-1 border border-slate-100 text-center">
+                        <p class="text-[10px] font-bold text-slate-400 mb-1">작년비</p>
+                        <p class="text-sm font-black text-emerald-600">+8.9% ▲</p>
+                    </div>
+                    <div class="bg-slate-50 rounded-2xl p-3 flex-1 border border-slate-100 text-center">
+                        <p class="text-[10px] font-bold text-slate-400 mb-1">5년 평균비</p>
+                        <p class="text-sm font-black text-emerald-600">+11.5% ▲</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 p-8 rounded-[2.5rem] card-shadow relative">
+                <p class="text-[11px] font-bold text-slate-500 uppercase mb-3">5년 평균 누적 도달률</p>
+                <div class="text-5xl font-black text-white tracking-tighter mb-4">104.2%</div>
+                <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                    <div class="bg-white h-full rounded-full w-[100%] shadow-[0_0_15px_rgba(255,255,255,0.5)]"></div>
+                </div>
+                <p class="text-[10px] font-bold text-slate-500 mt-4 text-right italic">Target: 5년 평균 누적 실적 돌파 중</p>
+            </div>
+        </div>
+
+        <h2 class="text-lg font-black text-slate-800 mb-6 px-2">패턴 및 사이즈별 누적 분석</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12" id="product-grid">
+            </div>
+
+        <div class="bg-white rounded-[2.5rem] card-shadow border border-slate-100 overflow-hidden">
+            <div class="px-8 py-6 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
+                <h3 class="font-black text-slate-800">거래처별 실적 성과 랭킹</h3>
+                <span class="text-[10px] font-bold text-slate-400 bg-white px-3 py-1 rounded-full border border-slate-100">Sort: 누적 판매량 순</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left whitespace-nowrap">
+                    <thead>
+                        <tr class="bg-white">
+                            <th class="px-8 py-5 border-b border-slate-100">거래처명</th>
+                            <th class="px-8 py-5 border-b border-slate-100 text-right">당월 판매</th>
+                            <th class="px-8 py-5 border-b border-slate-100 text-right font-black text-slate-800 bg-slate-50/30">누적 판매(YTD)</th>
+                            <th class="px-8 py-5 border-b border-slate-100 text-right">누적 전년비(%)</th>
+                            <th class="px-8 py-5 border-b border-slate-100 text-right">5년 평균비(%)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dealer-list" class="divide-y divide-slate-50 text-sm font-bold">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // 현재 날짜 기준 자동 텍스트 업데이트
+        const now = new Date();
+        document.getElementById('period-text').innerText = `2026.01 - ${now.getMonth()+1}월 누계 분석`;
+
+        function changeView(model) {
+            // 필터 버튼 시각적 전환 로직
+            const btns = document.querySelectorAll('button');
+            btns.forEach(btn => {
+                if(btn.innerText.includes(model) || (model==='ALL' && btn.innerText==='전체 시장')) {
+                    btn.className = "px-8 py-2.5 rounded-xl text-sm font-black bg-white shadow-md text-slate-800 transition-all";
+                } else if(btn.innerText.includes('RS002') || btn.innerText.includes('RD002')) {
+                    btn.className = "px-8 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-900 transition-all";
+                }
+            });
+            // 데이터 렌더링 함수 호출...
+        }
+    </script>
+</body>
+</html>
