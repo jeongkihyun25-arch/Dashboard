@@ -1,60 +1,55 @@
 <script>
-const GITHUB_USER = "jeongkihyun25-arch";
-const REPO_NAME = "Dashboard";
-
-const URL_CURR = `https://raw.githubusercontent.com/${GITHUB_USER}/${REPO_NAME}/main/current_sales.xls`;
-const URL_HIST = `https://raw.githubusercontent.com/${GITHUB_USER}/${REPO_NAME}/main/historical_data.xlsx`;
+const URL_CURR = "https://raw.githubusercontent.com/jeongkihyun25-arch/Dashboard/main/current_sales.xls";
+const URL_HIST = "https://raw.githubusercontent.com/jeongkihyun25-arch/Dashboard/main/historical_data.xlsx";
 
 let rawCurrent = [];
 let rawHistory = [];
 
 let filterSize = 'ALL';
 let filterPattern = 'ALL';
-
 let selectedMonth = 1;
 let availableMonths = [];
 
-// 🔥 숫자 안전 변환
 const num = v => parseFloat(String(v||'0').replace(/,/g,'')) || 0;
 
 
-// ================== LOAD ==================
+// ================= LOAD =================
 async function loadData(){
 
-    // 🔥 CURRENT
-    try {
+    // 🔥 current
+    try{
         const res = await fetch(URL_CURR + "?t=" + Date.now());
-        if(!res.ok) throw new Error("current 실패");
+        if(!res.ok) throw new Error("current fetch 실패");
 
         const ab = await res.arrayBuffer();
         const wb = XLSX.read(new Uint8Array(ab), {type:'array'});
 
         rawCurrent = processCurrent(wb.Sheets[wb.SheetNames[0]]);
 
-    } catch(e){
+    }catch(e){
         console.error(e);
-        alert("❌ current_sales 로드 실패");
+        alert("❌ current_sales 로드 실패 (경로 또는 파일 확인)");
         return;
     }
 
-    // 🔥 HISTORY (실패 허용)
-    try {
+    // 🔥 history
+    try{
         const res = await fetch(URL_HIST + "?t=" + Date.now());
 
         if(res.ok){
             const ab = await res.arrayBuffer();
             const wb = XLSX.read(new Uint8Array(ab), {type:'array'});
             rawHistory = processHistory(wb.Sheets[wb.SheetNames[0]]);
-        } else {
+        }else{
             rawHistory = [];
         }
 
-    } catch(e){
+    }catch(e){
         console.warn("history 실패 (무시)");
         rawHistory = [];
     }
 
-    // 🔥 최신월 자동
+    // 🔥 최신 월 자동
     if(rawCurrent.length){
         const months = Object.keys(rawCurrent[0].monthly).map(Number);
         selectedMonth = Math.max(...months);
@@ -65,7 +60,7 @@ async function loadData(){
 }
 
 
-// ================== CURRENT ==================
+// ================= CURRENT =================
 function processCurrent(sheet){
 
     const rows = XLSX.utils.sheet_to_json(sheet,{header:1});
@@ -75,7 +70,6 @@ function processCurrent(sheet){
     const idxS = h.findIndex(v=>v.includes('SIZE')||v.includes('사이즈'));
     const idxP = h.findIndex(v=>v.includes('PTTN')||v.includes('패턴'));
 
-    // 🔥 월 컬럼 탐색 (핵심)
     const monthCols = {};
 
     h.forEach((v,i)=>{
@@ -86,11 +80,7 @@ function processCurrent(sheet){
         if(match){
             const m = parseInt(match[1]);
 
-            if(
-                txt.includes('QTY') ||
-                txt.includes('수량') ||
-                txt.includes('판매')
-            ){
+            if(txt.includes('QTY') || txt.includes('수량') || txt.includes('판매')){
                 monthCols[m] = i;
             }
         }
@@ -112,9 +102,7 @@ function processCurrent(sheet){
 
         availableMonths.forEach(m=>{
             let val = num(r[monthCols[m]]);
-
-            // 🔥 마이너스 제거
-            if(val < 0) val = 0;
+            if(val < 0) val = 0; // 🔥 마이너스 제거
 
             monthly[m] = val;
             y += val;
@@ -135,7 +123,7 @@ function processCurrent(sheet){
 }
 
 
-// ================== HISTORY ==================
+// ================= HISTORY =================
 function processHistory(sheet){
 
     const rows = XLSX.utils.sheet_to_json(sheet,{header:1});
@@ -151,7 +139,7 @@ function processHistory(sheet){
 }
 
 
-// ================== MONTH ==================
+// ================= MONTH =================
 function initMonthSelector(){
     const sel = document.getElementById('month-select');
     sel.innerHTML='';
@@ -171,7 +159,7 @@ window.changeMonth = function(){
 };
 
 
-// ================== RENDER ==================
+// ================= RENDER =================
 function render(){
 
     const cur = rawCurrent.filter(r=>
@@ -182,7 +170,6 @@ function render(){
     );
 
     let totalYTD=0,totalMonth=0,total5yr=0;
-
     const dealerMap={};
 
     cur.forEach(r=>{
@@ -250,7 +237,10 @@ function render(){
     });
 }
 
+function toggleRow(id){
+    const el = document.getElementById(id);
+    if(el) el.classList.toggle('hidden');
+}
 
-// ==================
 window.onload = loadData;
 </script>
