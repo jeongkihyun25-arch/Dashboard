@@ -1,246 +1,245 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BSTK 17.5인치 실적</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+body { font-family: sans-serif; background:#f8fafc; }
+.bstk-red { color:#E30613; }
+.card-shadow { box-shadow:0 10px 25px rgba(0,0,0,0.05); }
+.filter-active { background:#1e293b;color:white; }
+.filter-inactive { background:white;color:#64748b;border:1px solid #e2e8f0; }
+</style>
+</head>
+
+<body>
+
+<header class="bg-white p-4 flex justify-between">
+<h1 class="font-bold">BSTK 17.5인치 실적</h1>
+<select id="month-select" onchange="changeMonth()"></select>
+</header>
+
+<main class="p-6">
+
+<div class="grid grid-cols-3 gap-4 mb-6">
+<div class="bg-white p-6 card-shadow">
+누계
+<div id="ytd" class="text-3xl font-bold"></div>
+</div>
+
+<div class="bg-white p-6 card-shadow">
+당월
+<div id="mon" class="text-3xl font-bold"></div>
+</div>
+
+<div class="bg-white p-6 card-shadow">
+달성률
+<div id="pct" class="text-3xl font-bold"></div>
+</div>
+</div>
+
+<table class="w-full bg-white card-shadow">
+<thead>
+<tr>
+<th>딜러</th>
+<th>당월</th>
+<th>누계</th>
+<th>%</th>
+</tr>
+</thead>
+<tbody id="list"></tbody>
+</table>
+
+</main>
+
 <script>
+
 const URL_CURR = "https://raw.githubusercontent.com/jeongkihyun25-arch/Dashboard/main/current_sales.xls";
 const URL_HIST = "https://raw.githubusercontent.com/jeongkihyun25-arch/Dashboard/main/historical_data.xlsx";
 
 let rawCurrent = [];
 let rawHistory = [];
-
-let filterSize = 'ALL';
-let filterPattern = 'ALL';
 let selectedMonth = 1;
-let availableMonths = [];
 
-const num = v => parseFloat(String(v||'0').replace(/,/g,'')) || 0;
+// 🔥 필터
+function isValid(row, h){
+    const sizeIdx = h.findIndex(v=>v.includes('SIZE')||v.includes('사이즈'));
+    if(sizeIdx==-1) return false;
 
+    const size = String(row[sizeIdx]||'');
+    if(size.includes('235')) return false;
 
-// ================= LOAD =================
+    return true;
+}
+
+// 🔥 데이터 로드
 async function loadData(){
 
-    // 🔥 current
     try{
-        const res = await fetch(URL_CURR + "?t=" + Date.now());
-        if(!res.ok) throw new Error("current fetch 실패");
+        // current
+        const res = await fetch(URL_CURR+"?t="+Date.now());
+        if(!res.ok) throw "current 실패";
 
         const ab = await res.arrayBuffer();
         const wb = XLSX.read(new Uint8Array(ab), {type:'array'});
-
         rawCurrent = processCurrent(wb.Sheets[wb.SheetNames[0]]);
 
-    }catch(e){
-        console.error(e);
-        alert("❌ current_sales 로드 실패 (경로 또는 파일 확인)");
-        return;
-    }
+        // history (실패해도 무시)
+        try{
+            const hres = await fetch(URL_HIST);
+            if(hres.ok){
+                const hab = await hres.arrayBuffer();
+                const hwb = XLSX.read(new Uint8Array(hab), {type:'array'});
+                rawHistory = processHistory(hwb.Sheets[hwb.SheetNames[0]]);
+            }
+        }catch{}
 
-    // 🔥 history
-    try{
-        const res = await fetch(URL_HIST + "?t=" + Date.now());
-
-        if(res.ok){
-            const ab = await res.arrayBuffer();
-            const wb = XLSX.read(new Uint8Array(ab), {type:'array'});
-            rawHistory = processHistory(wb.Sheets[wb.SheetNames[0]]);
-        }else{
-            rawHistory = [];
+        // 최신월 자동
+        if(rawCurrent.length){
+            const months = Object.keys(rawCurrent[0].monthly);
+            selectedMonth = Math.max(...months.map(Number));
         }
 
+        initMonth();
+        render();
+
     }catch(e){
-        console.warn("history 실패 (무시)");
-        rawHistory = [];
+        alert("❌ current_sales 로드 실패");
+        console.error(e);
     }
-
-    // 🔥 최신 월 자동
-    if(rawCurrent.length){
-        const months = Object.keys(rawCurrent[0].monthly).map(Number);
-        selectedMonth = Math.max(...months);
-    }
-
-    initMonthSelector();
-    render();
 }
 
-
-// ================= CURRENT =================
+// 🔥 current 처리 (핵심)
 function processCurrent(sheet){
 
     const rows = XLSX.utils.sheet_to_json(sheet,{header:1});
-    const h = rows[0].map(v=>String(v||'').trim());
+    const h = rows[0];
 
     const idxD = h.findIndex(v=>v.includes('거래처')||v.includes('딜러'));
     const idxS = h.findIndex(v=>v.includes('SIZE')||v.includes('사이즈'));
-    const idxP = h.findIndex(v=>v.includes('PTTN')||v.includes('패턴'));
 
+    // 월 컬럼 찾기
     const monthCols = {};
-
     h.forEach((v,i)=>{
         const txt = String(v).replace(/\s+/g,'');
-
-        const match = txt.match(/2026[-\/]?(\d{1,2})/);
-
-        if(match){
-            const m = parseInt(match[1]);
-
-            if(txt.includes('QTY') || txt.includes('수량') || txt.includes('판매')){
-                monthCols[m] = i;
-            }
+        const m = txt.match(/2026[-\/]?(\d{1,2})/);
+        if(m && (txt.includes('QTY')||txt.includes('수량'))){
+            monthCols[parseInt(m[1])] = i;
         }
     });
 
-    availableMonths = Object.keys(monthCols).map(Number).sort((a,b)=>a-b);
-
-    const result = [];
+    const result=[];
 
     for(let i=1;i<rows.length;i++){
         const r = rows[i];
-        if(!r) continue;
+        if(!r || !isValid(r,h)) continue;
 
-        const size = String(r[idxS]||'');
-        if(size.includes('235')) continue;
+        let y=0;
+        const monthly={};
 
-        let y = 0;
-        const monthly = {};
+        Object.entries(monthCols).forEach(([m,idx])=>{
+            let v = parseFloat(String(r[idx]||0).replace(/,/g,''))||0;
 
-        availableMonths.forEach(m=>{
-            let val = num(r[monthCols[m]]);
-            if(val < 0) val = 0; // 🔥 마이너스 제거
+            if(v<0) v=0; // 🔥 마이너스 제거
 
-            monthly[m] = val;
-            y += val;
+            monthly[m]=v;
+            y+=v;
         });
 
-        if(y <= 0) continue;
-
         result.push({
-            d: String(r[idxD]||'기타').trim(),
-            s: size,
-            p: String(r[idxP]||''),
-            y,
-            monthly
+            d: String(r[idxD]||'기타'),
+            s: String(r[idxS]||''),
+            y:y,
+            monthly:monthly
         });
     }
 
     return result;
 }
 
-
-// ================= HISTORY =================
+// 🔥 history
 function processHistory(sheet){
-
     const rows = XLSX.utils.sheet_to_json(sheet,{header:1});
-    const h = rows[0];
-
-    const idxSize = h.findIndex(v=>String(v).includes('사이즈'));
-    const idxAvg = h.findIndex(v=>String(v).includes('5년'));
-
     return rows.slice(1).map(r=>({
-        d: String(r[0]||''),
-        a: num(r[idxAvg])
-    })).filter(r=>!String(r[idxSize]).includes('235'));
+        d:String(r[0]||''),
+        a:parseFloat(r[2]||0)||0
+    }));
 }
 
-
-// ================= MONTH =================
-function initMonthSelector(){
+// 🔥 월 선택 UI
+function initMonth(){
     const sel = document.getElementById('month-select');
     sel.innerHTML='';
 
-    availableMonths.forEach(m=>{
-        const o=document.createElement('option');
-        o.value=m;
-        o.textContent=m+'월';
-        if(m===selectedMonth) o.selected=true;
-        sel.appendChild(o);
-    });
+    for(let i=1;i<=12;i++){
+        const op=document.createElement('option');
+        op.value=i;
+        op.textContent=i+'월';
+        if(i==selectedMonth) op.selected=true;
+        sel.appendChild(op);
+    }
 }
 
-window.changeMonth = function(){
+function changeMonth(){
     selectedMonth = parseInt(document.getElementById('month-select').value);
     render();
-};
+}
 
-
-// ================= RENDER =================
+// 🔥 렌더
 function render(){
 
-    const cur = rawCurrent.filter(r=>
-        (filterSize==='ALL'||r.s.includes(filterSize)) &&
-        (filterPattern==='ALL'||
-         (filterPattern==='RS002' && r.p.toUpperCase().includes('STEER'))||
-         (filterPattern==='RD002' && r.p.toUpperCase().includes('DRIVE')))
-    );
+    let totalY=0,totalM=0,totalA=0;
+    const map={};
 
-    let totalYTD=0,totalMonth=0,total5yr=0;
-    const dealerMap={};
-
-    cur.forEach(r=>{
+    rawCurrent.forEach(r=>{
         const m = r.monthly[selectedMonth]||0;
 
-        totalYTD += r.y;
-        totalMonth += m;
+        totalY+=r.y;
+        totalM+=m;
 
-        if(!dealerMap[r.d]) dealerMap[r.d]={y:0,m:0,a:0,details:[]};
-
-        dealerMap[r.d].y+=r.y;
-        dealerMap[r.d].m+=m;
-        dealerMap[r.d].details.push({...r,m});
+        if(!map[r.d]) map[r.d]={y:0,m:0,a:0};
+        map[r.d].y+=r.y;
+        map[r.d].m+=m;
     });
 
     rawHistory.forEach(r=>{
-        total5yr += r.a;
-        if(dealerMap[r.d]) dealerMap[r.d].a+=r.a;
+        totalA+=r.a;
+        if(map[r.d]) map[r.d].a+=r.a;
     });
 
-    document.getElementById('ytd-val').innerText = Math.round(totalYTD).toLocaleString();
-    document.getElementById('month-val').innerText = Math.round(totalMonth).toLocaleString();
-    document.getElementById('cum-month').innerText = selectedMonth;
-    document.getElementById('month-label').innerText = `${selectedMonth}월 실적`;
+    document.getElementById('ytd').innerText = Math.round(totalY);
+    document.getElementById('mon').innerText = Math.round(totalM);
 
-    const pct = total5yr>0 ? Math.round(totalYTD/total5yr*100) : 0;
-    document.getElementById('attainment-pct').innerText = pct+"%";
+    const pct = totalA>0 ? Math.round(totalY/totalA*100):0;
+    document.getElementById('pct').innerText = pct+'%';
 
-    document.getElementById('row-count').innerText =
-        `딜러 ${Object.keys(dealerMap).length} / 누계 ${Math.round(totalYTD).toLocaleString()}`;
-
-    const tbody = document.getElementById('dealer-list');
+    const tbody = document.getElementById('list');
     tbody.innerHTML='';
 
-    Object.entries(dealerMap)
-    .sort((a,b)=>b[1].y - a[1].y)
-    .forEach(([name,d],idx)=>{
+    Object.entries(map)
+    .sort((a,b)=>b[1].y-a[1].y)
+    .forEach(([name,d])=>{
 
-        const id=`detail-${idx}`;
+        const p = d.a>0 ? Math.round(d.y/d.a*100):0;
 
         tbody.innerHTML+=`
-        <tr onclick="toggleRow('${id}')" class="hover:bg-slate-50 cursor-pointer">
-            <td class="px-8 py-5 font-semibold">${name}</td>
-            <td class="px-8 py-5 text-right">${Math.round(d.m).toLocaleString()}</td>
-            <td class="px-8 py-5 text-right font-black bstk-red">${Math.round(d.y).toLocaleString()}</td>
-            <td class="px-8 py-5 text-right">${d.a?Math.round(d.y/d.a*100):0}%</td>
-        </tr>
-
-        <tr id="${id}" class="hidden bg-slate-50">
-        <td colspan="4" class="px-8 py-4">
-        <div class="bg-white border rounded-2xl p-5 text-xs">
-        <table class="w-full">
-        <thead><tr class="text-slate-400">
-        <th>규격</th><th>패턴</th><th class="text-right">누계</th>
-        </tr></thead>
-        <tbody>
-        ${d.details.map(x=>`
         <tr>
-        <td>${x.s}</td>
-        <td>${x.p}</td>
-        <td class="text-right bstk-red">${Math.round(x.y).toLocaleString()}</td>
-        </tr>`).join('')}
-        </tbody></table>
-        </div></td></tr>`;
+        <td>${name}</td>
+        <td>${Math.round(d.m)}</td>
+        <td class="bstk-red">${Math.round(d.y)}</td>
+        <td>${p}%</td>
+        </tr>`;
     });
-}
-
-function toggleRow(id){
-    const el = document.getElementById(id);
-    if(el) el.classList.toggle('hidden');
 }
 
 window.onload = loadData;
+
 </script>
+
+</body>
+</html>
