@@ -1,314 +1,203 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BSTK 17.5인치 실적</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
-        body { font-family: 'Pretendard', sans-serif; background-color: #f8fafc; }
-        .bstk-red { color: #E30613; }
-        .card-shadow { box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); }
-        .filter-btn { transition: all 0.2s ease; }
-        .filter-active { background-color: #1e293b; color: white; }
-        .filter-inactive { background-color: white; color: #64748b; border: 1px solid #e2e8f0; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BSTK Dashboard</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+body { font-family: sans-serif; background:#f8fafc; }
+.red { color:#E30613; }
+.active { background:#1e293b; color:white; }
+.inactive { background:white; color:#64748b; border:1px solid #e2e8f0; }
+</style>
 </head>
-<body class="antialiased">
-    <header class="sticky top-0 bg-white/95 backdrop-blur border-b">
-        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-            <div class="flex items-center gap-4">
-                <div class="bg-bstk-red text-white font-black px-3 py-1 rounded text-sm">BSTK</div>
-                <h1 class="text-xl font-black">17.5인치 TBR 실적 (235 제외 · 마이너스 제외)</h1>
-            </div>
-            <div class="flex items-center gap-4">
-                <select id="month-select" onchange="changeMonth()" class="border border-slate-300 rounded-2xl px-4 py-2 text-sm font-medium">
-                </select>
-                <div id="row-count" class="text-xs text-slate-500 font-medium"></div>
-            </div>
-        </div>
-    </header>
 
-    <main class="max-w-7xl mx-auto px-6 py-8">
-        <div class="bg-white p-6 rounded-3xl card-shadow mb-8 flex flex-wrap gap-8">
-            <div>
-                <span class="text-xs font-bold text-slate-400 block mb-2">규격 선택</span>
-                <div class="flex gap-1.5">
-                    <button onclick="setFilter('size','ALL')" id="sz-ALL" class="filter-btn filter-active px-6 py-2.5 rounded-2xl text-sm font-semibold">전체</button>
-                    <button onclick="setFilter('size','205')" id="sz-205" class="filter-btn filter-inactive px-6 py-2.5 rounded-2xl text-sm font-semibold">205</button>
-                    <button onclick="setFilter('size','215')" id="sz-215" class="filter-btn filter-inactive px-6 py-2.5 rounded-2xl text-sm font-semibold">215</button>
-                    <button onclick="setFilter('size','225')" id="sz-225" class="filter-btn filter-inactive px-6 py-2.5 rounded-2xl text-sm font-semibold">225</button>
-                </div>
-            </div>
-            <div>
-                <span class="text-xs font-bold text-slate-400 block mb-2">패턴 선택</span>
-                <div class="flex gap-1.5">
-                    <button onclick="setFilter('pattern','ALL')" id="pt-ALL" class="filter-btn filter-active px-6 py-2.5 rounded-2xl text-sm font-semibold">전체</button>
-                    <button onclick="setFilter('pattern','RS002')" id="pt-RS002" class="filter-btn filter-inactive px-6 py-2.5 rounded-2xl text-sm font-semibold">R-STEER 002</button>
-                    <button onclick="setFilter('pattern','RD002')" id="pt-RD002" class="filter-btn filter-inactive px-6 py-2.5 rounded-2xl text-sm font-semibold">R-DRIVE 002</button>
-                </div>
-            </div>
-        </div>
+<body class="p-6">
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-            <div class="bg-white p-8 rounded-3xl card-shadow">
-                <p class="text-sm text-slate-500">2026 누적 실적 (1~<span id="cum-month">4</span>월)</p>
-                <div id="ytd-val" class="text-6xl font-black bstk-red">0</div>
-                <span class="text-xl text-slate-300">본</span>
-            </div>
-            <div class="bg-white p-8 rounded-3xl card-shadow border-t-4 border-red-500">
-                <p id="month-label" class="text-sm text-slate-500">당월 실적</p>
-                <div id="month-val" class="text-6xl font-black text-red-600">0</div>
-                <span class="text-xl text-slate-300">본</span>
-            </div>
-            <div class="bg-slate-900 p-8 rounded-3xl card-shadow text-white">
-                <p class="text-sm text-slate-400">5년 평균 대비 (전체 누적 기준)</p>
-                <div id="attainment-pct" class="text-6xl font-black">0%</div>
-            </div>
-        </div>
+<h1 class="text-xl font-bold mb-4">17.5인치 실적</h1>
 
-        <div class="bg-white rounded-3xl card-shadow overflow-hidden">
-            <div class="px-8 py-5 border-b bg-slate-50 flex justify-between items-center">
-                <h3 class="font-semibold">딜러별 판매 실적</h3>
-                <input id="search-input" placeholder="딜러명 검색..." onkeyup="filterTable()" 
-                       class="border border-slate-300 rounded-full px-5 py-2 text-sm w-72 focus:outline-none">
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead class="bg-white text-xs text-slate-400">
-                        <tr>
-                            <th class="text-left px-8 py-4">딜러명</th>
-                            <th class="text-right px-8 py-4">당월</th>
-                            <th class="text-right px-8 py-4">누계</th>
-                            <th class="text-right px-8 py-4">5년 평균 대비</th>
-                        </tr>
-                    </thead>
-                    <tbody id="dealer-list" class="divide-y text-sm"></tbody>
-                </table>
-            </div>
-        </div>
-    </main>
+<select id="month" onchange="changeMonth()" class="border p-2 mb-4"></select>
 
-    <script>
-        const GITHUB_USER = "jeongkihyun25-arch";
-        const REPO_NAME = "Dashboard";
-        const URL_CURR = `https://raw.githubusercontent.com/${GITHUB_USER}/${REPO_NAME}/main/current_sales.xls?t=${Date.now()}`;
-        const URL_HIST = `https://raw.githubusercontent.com/${GITHUB_USER}/${REPO_NAME}/main/historical_data.xlsx?t=${Date.now()}`;
+<div class="mb-4">
+<button onclick="setFilter('ALL')" id="f-ALL" class="active px-3 py-1">전체</button>
+<button onclick="setFilter('205')" id="f-205" class="inactive px-3 py-1">205</button>
+<button onclick="setFilter('215')" id="f-215" class="inactive px-3 py-1">215</button>
+<button onclick="setFilter('225')" id="f-225" class="inactive px-3 py-1">225</button>
+</div>
 
-        let rawCurrent = [];
-        let rawHistory = [];
-        let filterSize = 'ALL';
-        let filterPattern = 'ALL';
-        let selectedMonth = 4;
+<div class="grid grid-cols-3 gap-4 mb-6">
+<div><p>누계</p><div id="ytd" class="text-3xl red">0</div></div>
+<div><p>당월</p><div id="monthVal" class="text-3xl">0</div></div>
+<div><p>딜러수</p><div id="cnt" class="text-3xl">0</div></div>
+</div>
 
-        const isStrictTarget = (row, header) => {
-            const mtpIdx = header.findIndex(v => String(v || '').toUpperCase().includes('MTP분류'));
-            const deptIdx = header.findIndex(v => String(v || '').includes('이익부서'));
-            const sizeIdx = header.findIndex(v => v.includes('SIZE') || v.includes('사이즈'));
-            const qtyIdx = header.length - 1;
+<table class="w-full text-sm">
+<thead>
+<tr>
+<th class="text-left">딜러</th>
+<th class="text-right">당월</th>
+<th class="text-right">누계</th>
+</tr>
+</thead>
+<tbody id="list"></tbody>
+</table>
 
-            if (mtpIdx === -1 || sizeIdx === -1) return false;
+<script>
 
-            const mtp = String(row[mtpIdx] || '').trim().toUpperCase();
-            const size = String(row[sizeIdx] || '').trim();
-            const qty = parseFloat(String(row[qtyIdx] || '0').replace(/,/g, '')) || 0;
-            const dept = deptIdx !== -1 ? String(row[deptIdx] || '').trim() : '';
+const URL = "https://raw.githubusercontent.com/jeongkihyun25-arch/Dashboard/main/current_sales.xls?t=" + Date.now();
 
-            if (size.includes('235')) return false;
-            if (qty <= 0) return false;
-            if (dept.includes('경영계획')) return false;
+let raw = [];
+let filter = 'ALL';
+let selectedMonth = null;
+let availableMonths = [];
 
-            const isLSR2 = mtp === 'LSR2';
-            const is17_5 = mtp.includes('17.5') && (mtp.includes('DOWN') || mtp.includes('T/L') || mtp.includes('TBR'));
+async function load(){
 
-            return isLSR2 || is17_5;
-        };
+    const res = await fetch(URL);
+    const ab = await res.arrayBuffer();
+    const wb = XLSX.read(new Uint8Array(ab), {type:'array'});
+    const sheet = wb.Sheets[wb.SheetNames[0]];
 
-        async function loadData() {
-            try {
-                const [cRes, hRes] = await Promise.all([fetch(URL_CURR), fetch(URL_HIST)]);
-                const cAb = await cRes.arrayBuffer();
-                const hAb = await hRes.arrayBuffer();
+    const rows = XLSX.utils.sheet_to_json(sheet,{header:1});
+    const header = rows[0].map(v=>String(v||'').trim());
 
-                const cWb = XLSX.read(new Uint8Array(cAb), {type: 'array'});
-                const hWb = XLSX.read(new Uint8Array(hAb), {type: 'array'});
+    const idxDealer = header.findIndex(v=>v.includes('거래처')||v.includes('딜러'));
+    const idxSize = header.findIndex(v=>v.includes('SIZE')||v.includes('사이즈'));
 
-                rawCurrent = processCurrent(cWb.Sheets[cWb.SheetNames[0]]);
-                rawHistory = processHistory(hWb.Sheets[hWb.SheetNames[0]]);
+    // 🔥 월 자동 탐색
+    const monthCols = {};
 
-                initMonthSelector();
-                render();
-            } catch (e) {
-                console.error(e);
-                alert("파일 로드 실패");
+    header.forEach((v,i)=>{
+        const txt = String(v).replace(/\s+/g,'');
+        const match = txt.match(/2026[-\/]?(\d{1,2})/);
+
+        if(match){
+            const m = parseInt(match[1]);
+
+            if(
+                txt.includes('QTY') ||
+                txt.includes('수량') ||
+                txt.includes('판매')
+            ){
+                monthCols[m] = i;
             }
         }
+    });
 
-        function processCurrent(sheet) {
-            const rows = XLSX.utils.sheet_to_json(sheet, {header: 1});
-            if (rows.length < 2) return [];
-            const h = rows[0].map(v => String(v || '').trim());
+    availableMonths = Object.keys(monthCols).map(Number).sort((a,b)=>a-b);
 
-            const idxD = h.findIndex(v => v.includes('거래처') || v.includes('딜러'));
-            const idxS = h.findIndex(v => v.includes('SIZE') || v.includes('사이즈'));
-            const idxP = h.findIndex(v => v.includes('PTTN') || v.includes('패턴'));
+    // 👉 최신 월 자동 선택
+    selectedMonth = Math.max(...availableMonths);
 
-            const result = [];
-            for (let i = 1; i < rows.length; i++) {
-                const r = rows[i];
-                if (!r || !isStrictTarget(r, h)) continue;
+    raw = [];
 
-                const y = parseFloat(String(r[h.length - 1] || '0').replace(/,/g, '')) || 0;
+    for(let i=1;i<rows.length;i++){
+        const r = rows[i];
+        if(!r) continue;
 
-                const monthly = {};
-                for (let m = 1; m <= 12; m++) {
-                    const key = `2026-${m < 10 ? '0' : ''}${m}`;
-                    // 공백이 있을 수 있으므로 더 유연하게 찾음
-                    const colIdx = h.findIndex(v => String(v).replace(/\s+/g, '').includes(key.replace(/\s+/g, '')) && String(v).includes('QTY'));
-                    if (colIdx !== -1) {
-                        monthly[m] = parseFloat(String(r[colIdx] || '0').replace(/,/g, '')) || 0;
-                    }
-                }
+        const size = String(r[idxSize]||'');
+        if(size.includes('235')) continue;
 
-                result.push({
-                    d: String(r[idxD] || '기타').trim(),
-                    s: String(r[idxS] || ''),
-                    p: String(r[idxP] || ''),
-                    y: y,
-                    monthly: monthly
-                });
-            }
-            return result;
-        }
+        const dealer = String(r[idxDealer]||'기타');
 
-        function processHistory(sheet) {
-            const rows = XLSX.utils.sheet_to_json(sheet, {header: 1});
-            if (rows.length < 2) return [];
-            const h = rows[0].map(v => String(v || '').trim());
-            const idxD = 0;
-            const idxS = h.findIndex(v => v.includes('사이즈'));
-            const idxAvg = h.findIndex(v => v.includes('5년평균'));
+        let y = 0;
+        const monthly = {};
 
-            const result = [];
-            for (let i = 1; i < rows.length; i++) {
-                const r = rows[i];
-                if (!r) continue;
-                if (String(r[idxS] || '').includes('235')) continue;
-                result.push({
-                    d: String(r[idxD] || '기타').trim(),
-                    a: parseFloat(r[idxAvg] || 0) || 0
-                });
-            }
-            return result;
-        }
+        availableMonths.forEach(m=>{
+            let val = parseFloat(String(r[monthCols[m]]||'0').replace(/,/g,''))||0;
 
-        function initMonthSelector() {
-            const sel = document.getElementById('month-select');
-            sel.innerHTML = '';
-            for (let m = 1; m <= 12; m++) {
-                const opt = document.createElement('option');
-                opt.value = m;
-                opt.textContent = `${m}월`;
-                if (m === selectedMonth) opt.selected = true;
-                sel.appendChild(opt);
-            }
-        }
+            // 🔥 마이너스 제거
+            if(val < 0) val = 0;
 
-        window.changeMonth = function() {
-            selectedMonth = parseInt(document.getElementById('month-select').value);
-            render();
-        };
+            monthly[m] = val;
+            y += val;
+        });
 
-        function render() {
-            const cur = rawCurrent.filter(r => 
-                (filterSize === 'ALL' || r.s.includes(filterSize)) &&
-                (filterPattern === 'ALL' || 
-                 (filterPattern === 'RS002' && r.p.toUpperCase().includes('STEER')) ||
-                 (filterPattern === 'RD002' && r.p.toUpperCase().includes('DRIVE')))
-            );
+        if(y <= 0) continue;
 
-            let totalYTD = 0, totalMonth = 0, total5yr = 0;
-            const dealerMap = {};
+        raw.push({dealer,size,monthly,y});
+    }
 
-            cur.forEach(r => {
-                const mQty = r.monthly[selectedMonth] || 0;
-                totalYTD += r.y;
-                totalMonth += mQty;
+    initMonth();
+    render();
+}
 
-                if (!dealerMap[r.d]) dealerMap[r.d] = {y:0, m:0, a:0, details:[]};
-                dealerMap[r.d].y += r.y;
-                dealerMap[r.d].m += mQty;
-                dealerMap[r.d].details.push({...r, m: mQty});
-            });
+function initMonth(){
+    const sel = document.getElementById('month');
+    sel.innerHTML='';
 
-            rawHistory.forEach(r => {
-                total5yr += r.a;
-                if (dealerMap[r.d]) dealerMap[r.d].a += r.a;
-            });
+    availableMonths.forEach(m=>{
+        const o=document.createElement('option');
+        o.value=m;
+        o.textContent=m+'월';
+        if(m===selectedMonth) o.selected=true;
+        sel.appendChild(o);
+    });
+}
 
-            document.getElementById('ytd-val').innerText = Math.round(totalYTD).toLocaleString();
-            document.getElementById('month-val').innerText = Math.round(totalMonth).toLocaleString();
-            document.getElementById('month-label').innerText = `${selectedMonth}월 실적`;
-            document.getElementById('cum-month').innerText = selectedMonth;
-            document.getElementById('row-count').innerText = `처리 행 ${cur.length}건 (누적 ${Math.round(totalYTD).toLocaleString()}본)`;
+function changeMonth(){
+    selectedMonth = parseInt(document.getElementById('month').value);
+    render();
+}
 
-            const pct = total5yr > 0 ? Math.round((totalYTD / total5yr) * 100) : 0;
-            document.getElementById('attainment-pct').innerText = pct + "%";
+function setFilter(v){
+    filter = v;
 
-            const tbody = document.getElementById('dealer-list');
-            tbody.innerHTML = '';
+    ['ALL','205','215','225'].forEach(x=>{
+        document.getElementById('f-'+x).className =
+        x===v ? 'active px-3 py-1' : 'inactive px-3 py-1';
+    });
 
-            Object.entries(dealerMap).sort((a,b) => b[1].y - a[1].y).forEach(([name, d], idx) => {
-                const dPct = d.a > 0 ? Math.round((d.y / d.a) * 100) : 0;
-                const detailId = `detail-${idx}`;
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-50 cursor-pointer" onclick="toggleRow('${detailId}')">
-                        <td class="px-8 py-5 font-semibold">${name}</td>
-                        <td class="px-8 py-5 text-right text-slate-500">${Math.round(d.m).toLocaleString()}</td>
-                        <td class="px-8 py-5 text-right font-black bstk-red">${Math.round(d.y).toLocaleString()}</td>
-                        <td class="px-8 py-5 text-right ${dPct >= 100 ? 'text-emerald-600' : 'text-slate-600'}">${dPct}%</td>
-                    </tr>
-                    <tr id="${detailId}" class="hidden bg-slate-50">
-                        <td colspan="4" class="px-8 py-4">
-                            <div class="bg-white border rounded-2xl p-5 text-xs">
-                                <table class="w-full">
-                                    <thead><tr class="text-slate-400"><th class="text-left">규격</th><th class="text-left">패턴</th><th class="text-right">누적</th></tr></thead>
-                                    <tbody>${d.details.map(item => `<tr><td>${item.s}</td><td>${item.p}</td><td class="text-right bstk-red">${Math.round(item.y).toLocaleString()}</td></tr>`).join('')}</tbody>
-                                </table>
-                            </div>
-                        </td>
-                    </tr>`;
-            });
-        }
+    render();
+}
 
-        window.setFilter = function(type, value) {
-            if (type === 'size') filterSize = value;
-            else filterPattern = value;
-            ['sz-ALL','sz-205','sz-215','sz-225','pt-ALL','pt-RS002','pt-RD002'].forEach(id => {
-                const btn = document.getElementById(id);
-                if (btn) btn.className = id.includes(value) || (value === 'ALL' && id.includes('ALL'))
-                    ? 'filter-btn filter-active px-6 py-2.5 rounded-2xl text-sm font-semibold'
-                    : 'filter-btn filter-inactive px-6 py-2.5 rounded-2xl text-sm font-semibold';
-            });
-            render();
-        };
+function render(){
 
-        function filterTable() {
-            const term = document.getElementById('search-input').value.toLowerCase().trim();
-            document.querySelectorAll('#dealer-list tr').forEach(tr => {
-                if (tr.id && tr.id.startsWith('detail-')) return;
-                tr.style.display = tr.textContent.toLowerCase().includes(term) ? '' : 'none';
-            });
-        }
+    const data = raw.filter(d=>{
+        return filter==='ALL' || d.size.includes(filter);
+    });
 
-        function toggleRow(id) {
-            const el = document.getElementById(id);
-            if (el) el.classList.toggle('hidden');
-        }
+    let totalY=0,totalM=0;
+    const map={};
 
-        window.onload = loadData;
-    </script>
+    data.forEach(d=>{
+        const mVal = d.monthly[selectedMonth]||0;
+
+        totalY += d.y;
+        totalM += mVal;
+
+        if(!map[d.dealer]) map[d.dealer]={y:0,m:0};
+
+        map[d.dealer].y += d.y;
+        map[d.dealer].m += mVal;
+    });
+
+    document.getElementById('ytd').innerText = Math.round(totalY).toLocaleString();
+    document.getElementById('monthVal').innerText = Math.round(totalM).toLocaleString();
+    document.getElementById('cnt').innerText = Object.keys(map).length;
+
+    const tbody = document.getElementById('list');
+    tbody.innerHTML='';
+
+    Object.entries(map)
+    .sort((a,b)=>b[1].y-b[1].y)
+    .forEach(([name,val])=>{
+        tbody.innerHTML += `
+        <tr>
+            <td>${name}</td>
+            <td class="text-right">${Math.round(val.m).toLocaleString()}</td>
+            <td class="text-right red font-bold">${Math.round(val.y).toLocaleString()}</td>
+        </tr>`;
+    });
+}
+
+load();
+
+</script>
+
 </body>
 </html>
