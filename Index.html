@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BSTK 17.5" LSR 모니터링</title>
+    <title>BSTK 17.5" LSR 부스트업</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
@@ -13,7 +13,6 @@
         .bg-bstk-red { background-color: #E30613; }
         .card-shadow { box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04), 0 8px 10px -6px rgba(0, 0, 0, 0.04); }
         .truncate-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; }
     </style>
 </head>
 <body class="text-slate-900 antialiased">
@@ -22,98 +21,75 @@
         <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
             <div class="flex items-center gap-4">
                 <div class="bg-bstk-red text-white font-black px-3 py-1 rounded-lg text-sm italic shadow-md">BSTK</div>
-                <h1 class="text-xl font-black text-slate-800 tracking-tight">17.5" LSR 워킹그룹 모니터링</h1>
+                <h1 class="text-xl font-black text-slate-800 tracking-tight">17.5" LSR 실적 대시보드</h1>
             </div>
             <div class="flex items-center gap-4">
-                <div class="text-right hidden sm:block">
-                    <p id="period-text" class="text-[11px] font-bold text-slate-400 uppercase">분석 준비 중...</p>
-                    <p class="text-[10px] text-slate-300">매주 월요일 자동 갱신</p>
+                <div class="text-right">
+                    <p id="period-text" class="text-[11px] font-bold text-slate-400 uppercase tracking-tighter">데이터 로딩 중...</p>
                 </div>
                 <div class="h-8 w-[1px] bg-slate-200"></div>
                 <div class="flex items-center gap-2">
-                    <span id="status-dot" class="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>
-                    <span id="status-text" class="text-xs font-bold text-slate-500">Connecting...</span>
+                    <span id="status-dot" class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></span>
+                    <span id="status-text" class="text-xs font-bold text-slate-500">Syncing...</span>
                 </div>
             </div>
         </div>
     </header>
 
     <main class="max-w-7xl mx-auto px-6 py-10">
-        <div class="flex mb-10">
-            <div class="bg-slate-200/50 p-1.5 rounded-2xl flex gap-1 shadow-inner">
-                <button onclick="changeView('ALL')" class="filter-btn px-8 py-2.5 rounded-xl text-sm font-black bg-white shadow-md text-slate-800 transition-all">전체 시장</button>
-                <button onclick="changeView('RS002')" class="filter-btn px-8 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-900 transition-all">RS002 (Steer)</button>
-                <button onclick="changeView('RD002')" class="filter-btn px-8 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-900 transition-all">RD002 (Drive)</button>
-            </div>
-        </div>
-
+        
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
             <div class="bg-white p-8 rounded-[2.5rem] card-shadow border border-slate-100">
-                <p class="text-[11px] font-bold text-slate-400 uppercase mb-3">누적 실적 현황 (YTD)</p>
+                <p class="text-[11px] font-bold text-slate-400 uppercase mb-3">2026 누적 실적 (YTD)</p>
                 <div class="flex items-baseline gap-2 mb-6">
-                    <span id="ytd-val" class="text-5xl font-black tracking-tighter">0</span>
+                    <span id="ytd-val" class="text-6xl font-black tracking-tighter">0</span>
                     <span class="text-slate-300 font-bold text-xl">본</span>
                 </div>
-                <div class="flex gap-3">
-                    <div class="bg-slate-50 rounded-2xl p-3 flex-1 border border-slate-100 text-center">
-                        <p class="text-[10px] font-bold text-slate-400 mb-1">작년비</p>
-                        <p id="ytd-vs-ly" class="text-sm font-black text-slate-400">- %</p>
-                    </div>
-                    <div class="bg-slate-50 rounded-2xl p-3 flex-1 border border-slate-100 text-center">
-                        <p class="text-[10px] font-bold text-slate-400 mb-1">5년 평균비</p>
-                        <p id="ytd-vs-avg" class="text-sm font-black text-slate-400">- %</p>
-                    </div>
+                <div class="flex items-center gap-2">
+                    <span class="px-2 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-black rounded-lg uppercase">전년비 추정</span>
+                    <span id="ytd-growth" class="text-xs font-bold text-emerald-600">계산 중...</span>
                 </div>
             </div>
 
-            <div class="bg-white p-8 rounded-[2.5rem] card-shadow border border-slate-100 relative overflow-hidden">
-                <div class="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-full -mr-16 -mt-16 opacity-50"></div>
-                <p class="text-[11px] font-bold text-slate-400 uppercase mb-3">당월 실적 (Current)</p>
-                <div class="flex items-baseline gap-2 mb-6 relative z-10">
-                    <span id="month-val" class="text-5xl font-black tracking-tighter">0</span>
+            <div class="bg-white p-8 rounded-[2.5rem] card-shadow border border-slate-100 border-t-4 border-t-red-500">
+                <p id="month-label" class="text-[11px] font-bold text-slate-400 uppercase mb-3">당월 실적 (Loading...)</p>
+                <div class="flex items-baseline gap-2 mb-6">
+                    <span id="month-val" class="text-6xl font-black tracking-tighter bstk-red">0</span>
                     <span class="text-slate-300 font-bold text-xl">본</span>
                 </div>
-                <div class="flex gap-3 relative z-10">
-                    <div class="bg-slate-50 rounded-2xl p-3 flex-1 border border-slate-100 text-center">
-                        <p class="text-[10px] font-bold text-slate-400 mb-1">작년비</p>
-                        <p id="month-vs-ly" class="text-sm font-black text-slate-400">- %</p>
-                    </div>
-                    <div class="bg-slate-50 rounded-2xl p-3 flex-1 border border-slate-100 text-center">
-                        <p class="text-[10px] font-bold text-slate-400 mb-1">5년 평균비</p>
-                        <p id="month-vs-avg" class="text-sm font-black text-slate-400">- %</p>
-                    </div>
+                <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                    <div id="month-bar" class="bg-bstk-red h-full" style="width: 0%"></div>
                 </div>
             </div>
 
-            <div class="bg-slate-900 p-8 rounded-[2.5rem] card-shadow relative">
+            <div class="bg-slate-900 p-8 rounded-[2.5rem] card-shadow text-white relative overflow-hidden">
                 <p class="text-[11px] font-bold text-slate-500 uppercase mb-3">5년 평균 누적 도달률</p>
-                <div id="attainment-val" class="text-5xl font-black text-white tracking-tighter mb-4">0%</div>
-                <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
-                    <div id="attainment-bar" class="bg-white h-full rounded-full shadow-[0_0_15px_rgba(255,255,255,0.5)] transition-all duration-1000" style="width: 0%"></div>
+                <div id="attainment-pct" class="text-6xl font-black tracking-tighter mb-4">0%</div>
+                <div class="w-full bg-slate-800 h-3 rounded-full overflow-hidden">
+                    <div id="attainment-bar" class="bg-white h-full transition-all duration-1000" style="width: 0%"></div>
                 </div>
-                <p id="attainment-msg" class="text-[10px] font-bold text-slate-500 mt-4 text-right italic">데이터 로딩 중...</p>
+                <p id="attainment-msg" class="text-[10px] font-bold text-slate-400 mt-4 text-right italic uppercase tracking-widest">Analysis in progress</p>
             </div>
         </div>
 
-        <h2 class="text-lg font-black text-slate-800 mb-6 px-2">패턴 및 사이즈별 누적 분석</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12" id="product-grid"></div>
-
-        <div class="bg-white rounded-[2.5rem] card-shadow border border-slate-100 overflow-hidden">
-            <div class="px-8 py-6 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
-                <h3 class="font-black text-slate-800">거래처별 실적 성과 랭킹</h3>
-                <span class="text-[10px] font-bold text-slate-400 bg-white px-3 py-1 rounded-full border border-slate-100">Sort: 누적 판매량 순</span>
+        <div class="bg-white rounded-[3rem] card-shadow border border-slate-100 overflow-hidden">
+            <div class="px-10 py-8 border-b border-slate-50 bg-slate-50/30 flex justify-between items-center">
+                <h3 class="font-black text-slate-800 text-lg">거래처별 실적 성과 (누적순)</h3>
+                <span class="text-[10px] font-bold text-slate-400 bg-white px-4 py-2 rounded-full border border-slate-100 uppercase">Unit: Pieces, %</span>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left whitespace-nowrap">
                     <thead>
-                        <tr class="bg-white">
-                            <th class="px-8 py-5 border-b border-slate-100">거래처명</th>
-                            <th class="px-8 py-5 border-b border-slate-100 text-right">당월 판매</th>
-                            <th class="px-8 py-5 border-b border-slate-100 text-right font-black text-slate-800 bg-slate-50/30">누적 판매(YTD)</th>
-                            <th class="px-8 py-5 border-b border-slate-100 text-right">전주 대비</th>
+                        <tr class="bg-white text-[11px] font-black text-slate-400 uppercase tracking-widest">
+                            <th class="px-10 py-6">대리점/거래처명</th>
+                            <th class="px-10 py-6 text-right">당월 실적</th>
+                            <th class="px-10 py-6 text-right bg-slate-50/50 text-slate-900">2026 누적 (YTD)</th>
+                            <th class="px-10 py-6 text-right">5년 평균비 (%)</th>
+                            <th class="px-10 py-6 text-center">상태</th>
                         </tr>
                     </thead>
-                    <tbody id="dealer-list" class="divide-y divide-slate-50 text-sm font-bold"></tbody>
+                    <tbody id="dealer-list" class="divide-y divide-slate-50 text-sm font-bold">
+                        </tbody>
                 </table>
             </div>
         </div>
@@ -122,81 +98,93 @@
     <script>
         const GITHUB_USER = "jeongkihyun25-arch";
         const REPO_NAME = "Dashboard";
-        const RAW_URL = `https://raw.githubusercontent.com/${GITHUB_USER}/${REPO_NAME}/main/current_sales.xlsx`;
+        const URL_HIST = `https://raw.githubusercontent.com/${GITHUB_USER}/${REPO_NAME}/main/historical_data.xlsx`;
+        const URL_CURR = `https://raw.githubusercontent.com/${GITHUB_USER}/${REPO_NAME}/main/current_sales.xlsx`;
 
-        let rawData = [];
-        const now = new Date();
-        document.getElementById('period-text').innerText = `2026.01 - ${now.getMonth() + 1}월 누계 분석`;
+        const norm = (str) => String(str || '').replace(/[^0-9a-zA-Z]/g, '').trim();
 
         async function init() {
             try {
-                const response = await fetch(RAW_URL);
-                if (!response.ok) throw new Error();
-                const arrayBuffer = await response.arrayBuffer();
-                const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
-                rawData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                const [hRes, cRes] = await Promise.all([fetch(URL_HIST), fetch(URL_CURR)]);
+                const [hAb, cAb] = await Promise.all([hRes.arrayBuffer(), cRes.arrayBuffer()]);
                 
+                const hWb = XLSX.read(new Uint8Array(hAb), {type: 'array'});
+                const cWb = XLSX.read(new Uint8Array(cAb), {type: 'array'});
+
+                const hRows = XLSX.utils.sheet_to_json(hWb.Sheets[hWb.SheetNames[0]]);
+                const cRows = XLSX.utils.sheet_to_json(cWb.Sheets[cWb.SheetNames[0]]);
+
+                // 1. 현재 월 판단 (데이터 상 가장 마지막 달 찾기)
+                const currentMonth = new Date().getMonth() + 1; // 예: 4월이면 4
+                const monthKey = currentMonth === 1 ? 'QTY' : `QTY_${currentMonth - 1}`;
+                document.getElementById('month-label').innerText = `당월 실적 (${currentMonth}월)`;
+                document.getElementById('period-text').innerText = `2026.01 - ${currentMonth}월 누계 분석`;
+
+                let totalYTD = 0, totalMonth = 0, totalAvgYTD = 0;
+                const dealerMap = {};
+
+                // 2. 현재 데이터 집계
+                cRows.forEach(row => {
+                    if (norm(row.SIZE).includes('175')) {
+                        const dealer = row.거래처 || '기타';
+                        const ytd = parseFloat(row.합계수량 || 0);
+                        const mVal = parseFloat(row[monthKey] || 0);
+
+                        totalYTD += ytd;
+                        totalMonth += mVal;
+
+                        if (!dealerMap[dealer]) dealerMap[dealer] = { ytd: 0, month: 0, avg: 0 };
+                        dealerMap[dealer].ytd += ytd;
+                        dealerMap[dealer].month += mVal;
+                    }
+                });
+
+                // 3. 과거 5년 평균 데이터 매칭 (대리점명 기준)
+                hRows.forEach(h => {
+                    const dName = h.거래처명;
+                    if (dealerMap[dName]) {
+                        // 5년 평균의 현재 월까지의 비중 계산 (단순 12등분 가정)
+                        const avgYTD = (parseFloat(h['5년평균'] || 0) / 12) * currentMonth;
+                        dealerMap[dName].avg += avgYTD;
+                        totalAvgYTD += avgYTD;
+                    }
+                });
+
+                // 4. UI 업데이트
+                document.getElementById('ytd-val').innerText = totalYTD.toLocaleString();
+                document.getElementById('month-val').innerText = totalMonth.toLocaleString();
+                document.getElementById('month-bar').style.width = (totalMonth / (totalYTD/currentMonth) * 100).toFixed(1) + "%";
+
+                const attPct = totalAvgYTD > 0 ? Math.round((totalYTD / totalAvgYTD) * 100) : 0;
+                document.getElementById('attainment-pct').innerText = attPct + "%";
+                document.getElementById('attainment-bar').style.width = Math.min(attPct, 100) + "%";
+                document.getElementById('attainment-msg').innerText = attPct >= 100 ? "EXCEEDING 5Y AVERAGE" : "ON TRACK TO GOAL";
+
+                const list = document.getElementById('dealer-list');
+                Object.entries(dealerMap).sort((a,b) => b[1].ytd - a[1].ytd).forEach(([name, data]) => {
+                    const pct = data.avg > 0 ? Math.round((data.ytd / data.avg) * 100) : 0;
+                    list.innerHTML += `
+                        <tr class="hover:bg-slate-50/80 transition-all group">
+                            <td class="px-10 py-6 text-slate-700 font-extrabold">${name}</td>
+                            <td class="px-10 py-6 text-right text-slate-400">${data.month.toLocaleString()}</td>
+                            <td class="px-10 py-6 text-right bg-slate-50/30 text-bstk-red font-black text-base">${data.ytd.toLocaleString()}</td>
+                            <td class="px-10 py-6 text-right font-black ${pct >= 100 ? 'text-emerald-600' : 'text-slate-400'}">${pct}%</td>
+                            <td class="px-10 py-6 text-center">
+                                <span class="px-2 py-1 rounded-md text-[10px] font-black uppercase ${pct >= 100 ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-400'}">
+                                    ${pct >= 100 ? 'Good' : 'Yield'}
+                                </span>
+                            </td>
+                        </tr>`;
+                });
+
                 document.getElementById('status-dot').className = "w-2 h-2 rounded-full bg-emerald-500";
                 document.getElementById('status-text').innerText = "Live Connected";
-                
-                renderDashboard('ALL');
+
             } catch (e) {
-                document.getElementById('status-text').innerText = "Load Error";
+                console.error(e);
+                document.getElementById('status-text').innerText = "Sync Error";
             }
         }
-
-        function renderDashboard(filter) {
-            const targetSizes = ['205/75R/17.5', '215/75R/17.5', '225/75R/17.5', '205/75R17.5', '215/75R17.5', '225/75R17.5'];
-            const filtered = rawData.filter(row => {
-                const sz = String(row.SIZE || '');
-                const pt = String(row.PTTN || '');
-                const isSize = targetSizes.some(s => sz.includes(s.split('/')[0]));
-                if (filter === 'ALL') return isSize;
-                return isSize && pt.includes(filter);
-            });
-
-            const totalYTD = filtered.reduce((acc, row) => acc + (row.합계수량 || 0), 0);
-            document.getElementById('ytd-val').innerText = totalYTD.toLocaleString();
-            
-            // 대리점 리스트 렌더링
-            const dealerList = document.getElementById('dealer-list');
-            dealerList.innerHTML = '';
-            const dealers = {};
-            filtered.forEach(row => {
-                const name = row.거래처 || '기타';
-                dealers[name] = (dealers[name] || 0) + (row.합계수량 || 0);
-            });
-
-            Object.entries(dealers).sort((a,b) => b[1]-a[1]).forEach(([name, qty]) => {
-                dealerList.innerHTML += `
-                    <tr class="hover:bg-slate-50 transition-colors">
-                        <td class="px-8 py-4">${name}</td>
-                        <td class="px-8 py-4 text-right">-</td>
-                        <td class="px-8 py-4 text-right bg-slate-50/30 text-bstk-red">${qty.toLocaleString()}</td>
-                        <td class="px-8 py-4 text-right text-emerald-600">▲ New</td>
-                    </tr>`;
-            });
-
-            // 게이지바 업데이트 (임시 85% 설정, 5년 데이터 연결 시 자동 계산)
-            setTimeout(() => {
-                document.getElementById('attainment-val').innerText = "85.2%";
-                document.getElementById('attainment-bar').style.width = "85.2%";
-                document.getElementById('attainment-msg').innerText = "Target: 5년 평균 대비 순항 중";
-            }, 500);
-        }
-
-        function changeView(model) {
-            const btns = document.querySelectorAll('.filter-btn');
-            btns.forEach(btn => {
-                if (btn.innerText.includes(model) || (model === 'ALL' && btn.innerText === '전체 시장')) {
-                    btn.className = "filter-btn px-8 py-2.5 rounded-xl text-sm font-black bg-white shadow-md text-slate-800 transition-all";
-                } else {
-                    btn.className = "filter-btn px-8 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-900 transition-all";
-                }
-            });
-            renderDashboard(model);
-        }
-
         window.onload = init;
     </script>
 </body>
