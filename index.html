@@ -26,16 +26,15 @@
             <div class="flex items-center gap-4">
                 <select id="month-select" onchange="changeMonth()" class="border border-slate-300 rounded-2xl px-4 py-2 text-sm font-medium">
                 </select>
-                <div id="row-count" class="text-xs text-slate-500"></div>
+                <div id="row-count" class="text-xs text-slate-500 font-medium"></div>
             </div>
         </div>
     </header>
 
     <main class="max-w-7xl mx-auto px-6 py-8">
-        <!-- 필터 -->
         <div class="bg-white p-6 rounded-3xl card-shadow mb-8 flex flex-wrap gap-8">
             <div>
-                <span class="text-xs font-bold text-slate-400 block mb-2">규격</span>
+                <span class="text-xs font-bold text-slate-400 block mb-2">규격 선택</span>
                 <div class="flex gap-1.5">
                     <button onclick="setFilter('size','ALL')" id="sz-ALL" class="filter-btn filter-active px-6 py-2.5 rounded-2xl text-sm font-semibold">전체</button>
                     <button onclick="setFilter('size','205')" id="sz-205" class="filter-btn filter-inactive px-6 py-2.5 rounded-2xl text-sm font-semibold">205</button>
@@ -44,7 +43,7 @@
                 </div>
             </div>
             <div>
-                <span class="text-xs font-bold text-slate-400 block mb-2">패턴</span>
+                <span class="text-xs font-bold text-slate-400 block mb-2">패턴 선택</span>
                 <div class="flex gap-1.5">
                     <button onclick="setFilter('pattern','ALL')" id="pt-ALL" class="filter-btn filter-active px-6 py-2.5 rounded-2xl text-sm font-semibold">전체</button>
                     <button onclick="setFilter('pattern','RS002')" id="pt-RS002" class="filter-btn filter-inactive px-6 py-2.5 rounded-2xl text-sm font-semibold">R-STEER 002</button>
@@ -53,7 +52,6 @@
             </div>
         </div>
 
-        <!-- 카드 -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
             <div class="bg-white p-8 rounded-3xl card-shadow">
                 <p class="text-sm text-slate-500">2026 누적 실적 (1~<span id="cum-month">4</span>월)</p>
@@ -71,15 +69,15 @@
             </div>
         </div>
 
-        <!-- 테이블 -->
         <div class="bg-white rounded-3xl card-shadow overflow-hidden">
-            <div class="px-8 py-5 border-b bg-slate-50 flex justify-between">
-                <h3 class="font-semibold">딜러별 실적</h3>
-                <input id="search-input" placeholder="딜러명 검색" onkeyup="filterTable()" class="border border-slate-300 rounded-full px-5 py-2 text-sm w-72">
+            <div class="px-8 py-5 border-b bg-slate-50 flex justify-between items-center">
+                <h3 class="font-semibold">딜러별 판매 실적</h3>
+                <input id="search-input" placeholder="딜러명 검색..." onkeyup="filterTable()" 
+                       class="border border-slate-300 rounded-full px-5 py-2 text-sm w-72 focus:outline-none">
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full">
-                    <thead class="text-xs text-slate-400">
+                    <thead class="bg-white text-xs text-slate-400">
                         <tr>
                             <th class="text-left px-8 py-4">딜러명</th>
                             <th class="text-right px-8 py-4">당월</th>
@@ -109,7 +107,7 @@
             const mtpIdx = header.findIndex(v => String(v || '').toUpperCase().includes('MTP분류'));
             const deptIdx = header.findIndex(v => String(v || '').includes('이익부서'));
             const sizeIdx = header.findIndex(v => v.includes('SIZE') || v.includes('사이즈'));
-            const qtyIdx = header.length - 1; // 합계수량
+            const qtyIdx = header.length - 1;
 
             if (mtpIdx === -1 || sizeIdx === -1) return false;
 
@@ -131,26 +129,26 @@
         async function loadData() {
             try {
                 const [cRes, hRes] = await Promise.all([fetch(URL_CURR), fetch(URL_HIST)]);
-                const cData = await cRes.arrayBuffer();
-                const hData = await hRes.arrayBuffer();
+                const cAb = await cRes.arrayBuffer();
+                const hAb = await hRes.arrayBuffer();
 
-                const cWb = XLSX.read(new Uint8Array(cData), {type:'array'});
-                const hWb = XLSX.read(new Uint8Array(hData), {type:'array'});
+                const cWb = XLSX.read(new Uint8Array(cAb), {type: 'array'});
+                const hWb = XLSX.read(new Uint8Array(hAb), {type: 'array'});
 
                 rawCurrent = processCurrent(cWb.Sheets[cWb.SheetNames[0]]);
                 rawHistory = processHistory(hWb.Sheets[hWb.SheetNames[0]]);
 
                 initMonthSelector();
                 render();
-                console.log(`Current 처리 행: ${rawCurrent.length} | History 행: ${rawHistory.length}`);
-            } catch(e) {
+            } catch (e) {
                 console.error(e);
-                alert("파일 로드 실패 - GitHub 파일 확인");
+                alert("파일 로드 실패");
             }
         }
 
         function processCurrent(sheet) {
             const rows = XLSX.utils.sheet_to_json(sheet, {header: 1});
+            if (rows.length < 2) return [];
             const h = rows[0].map(v => String(v || '').trim());
 
             const idxD = h.findIndex(v => v.includes('거래처') || v.includes('딜러'));
@@ -162,13 +160,16 @@
                 const r = rows[i];
                 if (!r || !isStrictTarget(r, h)) continue;
 
-                const y = parseFloat(String(r[h.length-1] || '0').replace(/,/g,'')) || 0;
+                const y = parseFloat(String(r[h.length - 1] || '0').replace(/,/g, '')) || 0;
 
                 const monthly = {};
-                for (let m=1; m<=12; m++) {
-                    const key = `2026-${m<10?'0':''}${m}`;
-                    const col = h.findIndex(v => String(v).includes(key) && String(v).includes('QTY'));
-                    if (col > -1) monthly[m] = parseFloat(String(r[col] || '0').replace(/,/g,'')) || 0;
+                for (let m = 1; m <= 12; m++) {
+                    const key = `2026-${m < 10 ? '0' : ''}${m}`;
+                    // 공백이 있을 수 있으므로 더 유연하게 찾음
+                    const colIdx = h.findIndex(v => String(v).replace(/\s+/g, '').includes(key.replace(/\s+/g, '')) && String(v).includes('QTY'));
+                    if (colIdx !== -1) {
+                        monthly[m] = parseFloat(String(r[colIdx] || '0').replace(/,/g, '')) || 0;
+                    }
                 }
 
                 result.push({
@@ -184,6 +185,7 @@
 
         function processHistory(sheet) {
             const rows = XLSX.utils.sheet_to_json(sheet, {header: 1});
+            if (rows.length < 2) return [];
             const h = rows[0].map(v => String(v || '').trim());
             const idxD = 0;
             const idxS = h.findIndex(v => v.includes('사이즈'));
@@ -205,7 +207,7 @@
         function initMonthSelector() {
             const sel = document.getElementById('month-select');
             sel.innerHTML = '';
-            for (let m=1; m<=12; m++) {
+            for (let m = 1; m <= 12; m++) {
                 const opt = document.createElement('option');
                 opt.value = m;
                 opt.textContent = `${m}월`;
@@ -220,7 +222,7 @@
         };
 
         function render() {
-            const filtered = rawCurrent.filter(r => 
+            const cur = rawCurrent.filter(r => 
                 (filterSize === 'ALL' || r.s.includes(filterSize)) &&
                 (filterPattern === 'ALL' || 
                  (filterPattern === 'RS002' && r.p.toUpperCase().includes('STEER')) ||
@@ -230,7 +232,7 @@
             let totalYTD = 0, totalMonth = 0, total5yr = 0;
             const dealerMap = {};
 
-            filtered.forEach(r => {
+            cur.forEach(r => {
                 const mQty = r.monthly[selectedMonth] || 0;
                 totalYTD += r.y;
                 totalMonth += mQty;
@@ -241,7 +243,6 @@
                 dealerMap[r.d].details.push({...r, m: mQty});
             });
 
-            // 5년 평균은 전체 누적으로 단순 비교
             rawHistory.forEach(r => {
                 total5yr += r.a;
                 if (dealerMap[r.d]) dealerMap[r.d].a += r.a;
@@ -251,25 +252,25 @@
             document.getElementById('month-val').innerText = Math.round(totalMonth).toLocaleString();
             document.getElementById('month-label').innerText = `${selectedMonth}월 실적`;
             document.getElementById('cum-month').innerText = selectedMonth;
-            document.getElementById('row-count').innerText = `처리 ${filtered.length}건 (누적 ${Math.round(totalYTD).toLocaleString()}본)`;
+            document.getElementById('row-count').innerText = `처리 행 ${cur.length}건 (누적 ${Math.round(totalYTD).toLocaleString()}본)`;
 
             const pct = total5yr > 0 ? Math.round((totalYTD / total5yr) * 100) : 0;
             document.getElementById('attainment-pct').innerText = pct + "%";
 
-            // 테이블 렌더링
             const tbody = document.getElementById('dealer-list');
             tbody.innerHTML = '';
-            Object.entries(dealerMap).sort((a,b) => b[1].y - a[1].y).forEach(([name, d], i) => {
-                const dPct = d.a > 0 ? Math.round((d.y / d.a)*100) : 0;
-                const id = `det-${i}`;
+
+            Object.entries(dealerMap).sort((a,b) => b[1].y - a[1].y).forEach(([name, d], idx) => {
+                const dPct = d.a > 0 ? Math.round((d.y / d.a) * 100) : 0;
+                const detailId = `detail-${idx}`;
                 tbody.innerHTML += `
-                    <tr class="hover:bg-slate-50 cursor-pointer" onclick="toggleRow('${id}')">
-                        <td class="px-8 py-5 font-medium">${name}</td>
+                    <tr class="hover:bg-slate-50 cursor-pointer" onclick="toggleRow('${detailId}')">
+                        <td class="px-8 py-5 font-semibold">${name}</td>
                         <td class="px-8 py-5 text-right text-slate-500">${Math.round(d.m).toLocaleString()}</td>
                         <td class="px-8 py-5 text-right font-black bstk-red">${Math.round(d.y).toLocaleString()}</td>
-                        <td class="px-8 py-5 text-right ${dPct>=100?'text-emerald-600':'text-slate-600'}">${dPct}%</td>
+                        <td class="px-8 py-5 text-right ${dPct >= 100 ? 'text-emerald-600' : 'text-slate-600'}">${dPct}%</td>
                     </tr>
-                    <tr id="${id}" class="hidden bg-slate-50">
+                    <tr id="${detailId}" class="hidden bg-slate-50">
                         <td colspan="4" class="px-8 py-4">
                             <div class="bg-white border rounded-2xl p-5 text-xs">
                                 <table class="w-full">
@@ -282,12 +283,13 @@
             });
         }
 
-        window.setFilter = function(t, v) {
-            if (t==='size') filterSize = v; else filterPattern = v;
+        window.setFilter = function(type, value) {
+            if (type === 'size') filterSize = value;
+            else filterPattern = value;
             ['sz-ALL','sz-205','sz-215','sz-225','pt-ALL','pt-RS002','pt-RD002'].forEach(id => {
-                const b = document.getElementById(id);
-                if (b) b.className = (id.includes(v) || (v==='ALL' && id.includes('ALL'))) 
-                    ? 'filter-btn filter-active px-6 py-2.5 rounded-2xl text-sm font-semibold' 
+                const btn = document.getElementById(id);
+                if (btn) btn.className = id.includes(value) || (value === 'ALL' && id.includes('ALL'))
+                    ? 'filter-btn filter-active px-6 py-2.5 rounded-2xl text-sm font-semibold'
                     : 'filter-btn filter-inactive px-6 py-2.5 rounded-2xl text-sm font-semibold';
             });
             render();
@@ -296,7 +298,7 @@
         function filterTable() {
             const term = document.getElementById('search-input').value.toLowerCase().trim();
             document.querySelectorAll('#dealer-list tr').forEach(tr => {
-                if (tr.id && tr.id.startsWith('det-')) return;
+                if (tr.id && tr.id.startsWith('detail-')) return;
                 tr.style.display = tr.textContent.toLowerCase().includes(term) ? '' : 'none';
             });
         }
