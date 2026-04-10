@@ -3,98 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BSTK LT WG 17.5인치 실적</title>
+    <title>BSTK 17.5인치 실적 대시보드</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
-        body { font-family: 'Pretendard', sans-serif; letter-spacing: -0.02em; background-color: #f8fafc; }
+        body { font-family: 'Pretendard', sans-serif; background-color: #f8fafc; }
         .bstk-red { color: #E30613; }
-        .bg-bstk-red { background-color: #E30613; }
-        .card-shadow { box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); }
+        .card-shadow { box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); }
         .filter-btn { transition: all 0.2s ease; }
         .filter-active { background-color: #1e293b; color: white; }
         .filter-inactive { background-color: white; color: #64748b; border: 1px solid #e2e8f0; }
     </style>
 </head>
-<body class="text-slate-900 antialiased">
-    <header class="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200">
+<body class="antialiased">
+    <header class="sticky top-0 bg-white/95 backdrop-blur border-b">
         <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
             <div class="flex items-center gap-4">
-                <div class="bg-bstk-red text-white font-black px-3 py-1 rounded-lg text-sm italic shadow-md">BSTK</div>
-                <h1 class="text-xl font-black tracking-tight">17.5인치 TBR 실적 (235 제외)</h1>
+                <div class="bg-bstk-red text-white font-black px-3 py-1 rounded text-sm">BSTK</div>
+                <h1 class="text-xl font-black">17.5인치 TBR 실적 대시보드 <span class="text-sm font-normal text-slate-400">(235 제외)</span></h1>
             </div>
-            <div id="row-count" class="text-xs font-medium text-slate-500"></div>
+            <div id="row-count" class="text-xs text-slate-500"></div>
         </div>
     </header>
 
     <main class="max-w-7xl mx-auto px-6 py-8">
         <!-- 필터 -->
-        <div class="bg-white p-6 rounded-3xl card-shadow border border-slate-100 mb-8">
-            <div class="flex flex-wrap gap-8">
-                <div>
-                    <span class="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-2">규격 선택</span>
-                    <div class="flex gap-1.5">
-                        <button onclick="setFilter('size', 'ALL')" id="sz-ALL" class="filter-btn filter-active px-6 py-2.5 rounded-2xl text-sm font-semibold">전체 (235 제외)</button>
-                        <button onclick="setFilter('size', '205')" id="sz-205" class="filter-btn filter-inactive px-6 py-2.5 rounded-2xl text-sm font-semibold">205</button>
-                        <button onclick="setFilter('size', '215')" id="sz-215" class="filter-btn filter-inactive px-6 py-2.5 rounded-2xl text-sm font-semibold">215</button>
-                        <button onclick="setFilter('size', '225')" id="sz-225" class="filter-btn filter-inactive px-6 py-2.5 rounded-2xl text-sm font-semibold">225</button>
-                    </div>
+        <div class="bg-white p-6 rounded-3xl card-shadow border border-slate-100 mb-8 flex flex-wrap gap-8">
+            <div>
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-2">규격 선택</span>
+                <div class="flex gap-1.5">
+                    <button onclick="setFilter('size','ALL')" id="sz-ALL" class="filter-btn filter-active px-6 py-2.5 rounded-2xl text-sm font-semibold">전체</button>
+                    <button onclick="setFilter('size','205')" id="sz-205" class="filter-btn filter-inactive px-6 py-2.5 rounded-2xl text-sm font-semibold">205</button>
+                    <button onclick="setFilter('size','215')" id="sz-215" class="filter-btn filter-inactive px-6 py-2.5 rounded-2xl text-sm font-semibold">215</button>
+                    <button onclick="setFilter('size','225')" id="sz-225" class="filter-btn filter-inactive px-6 py-2.5 rounded-2xl text-sm font-semibold">225</button>
                 </div>
-                <div>
-                    <span class="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-2">패턴 선택</span>
-                    <div class="flex gap-1.5">
-                        <button onclick="setFilter('pattern', 'ALL')" id="pt-ALL" class="filter-btn filter-active px-6 py-2.5 rounded-2xl text-sm font-semibold">전체</button>
-                        <button onclick="setFilter('pattern', 'RS002')" id="pt-RS002" class="filter-btn filter-inactive px-6 py-2.5 rounded-2xl text-sm font-semibold">R-STEER 002</button>
-                        <button onclick="setFilter('pattern', 'RD002')" id="pt-RD002" class="filter-btn filter-inactive px-6 py-2.5 rounded-2xl text-sm font-semibold">R-DRIVE 002</button>
-                    </div>
+            </div>
+            <div>
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-2">패턴 선택</span>
+                <div class="flex gap-1.5">
+                    <button onclick="setFilter('pattern','ALL')" id="pt-ALL" class="filter-btn filter-active px-6 py-2.5 rounded-2xl text-sm font-semibold">전체</button>
+                    <button onclick="setFilter('pattern','RS002')" id="pt-RS002" class="filter-btn filter-inactive px-6 py-2.5 rounded-2xl text-sm font-semibold">R-STEER 002</button>
+                    <button onclick="setFilter('pattern','RD002')" id="pt-RD002" class="filter-btn filter-inactive px-6 py-2.5 rounded-2xl text-sm font-semibold">R-DRIVE 002</button>
                 </div>
             </div>
         </div>
 
         <!-- 요약 카드 -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-            <div class="bg-white p-8 rounded-3xl card-shadow border border-slate-100">
-                <p class="text-xs font-bold text-slate-400 uppercase mb-1">2026년 누적 실적</p>
-                <div class="flex items-baseline gap-3">
-                    <span id="ytd-val" class="text-5xl font-black tracking-tighter text-slate-800">0</span>
-                    <span class="text-2xl text-slate-300 font-semibold">본</span>
-                </div>
+            <div class="bg-white p-8 rounded-3xl card-shadow">
+                <p class="text-sm text-slate-500">2026년 누적 실적</p>
+                <div id="ytd-val" class="text-6xl font-black tracking-tighter">0</div>
+                <span class="text-xl text-slate-300">본</span>
             </div>
-            <div class="bg-white p-8 rounded-3xl card-shadow border border-slate-100 border-t-4 border-t-red-500">
-                <p id="month-label" class="text-xs font-bold text-slate-400 uppercase mb-1">당월 실적</p>
-                <div class="flex items-baseline gap-3 text-red-600">
-                    <span id="month-val" class="text-5xl font-black tracking-tighter">0</span>
-                    <span class="text-2xl text-slate-300 font-semibold">본</span>
-                </div>
+            <div class="bg-white p-8 rounded-3xl card-shadow border-t-4 border-red-500">
+                <p id="month-label" class="text-sm text-slate-500">당월 실적</p>
+                <div id="month-val" class="text-6xl font-black text-red-600 tracking-tighter">0</div>
+                <span class="text-xl text-slate-300">본</span>
             </div>
             <div class="bg-slate-900 p-8 rounded-3xl card-shadow text-white">
-                <p class="text-xs font-bold text-slate-400 uppercase mb-1">5년 평균 대비</p>
-                <div id="attainment-pct" class="text-5xl font-black tracking-tighter mb-2">0%</div>
-                <div class="h-2 bg-slate-700 rounded-full overflow-hidden">
-                    <div id="attainment-bar" class="h-full bg-emerald-400 transition-all duration-700" style="width: 0%"></div>
-                </div>
+                <p class="text-sm text-slate-400">5년 평균 대비</p>
+                <div id="attainment-pct" class="text-6xl font-black">0%</div>
             </div>
         </div>
 
-        <!-- 딜러 테이블 -->
-        <div class="bg-white rounded-3xl card-shadow border border-slate-100 overflow-hidden">
-            <div class="px-8 py-5 border-b flex items-center justify-between bg-slate-50">
-                <h3 class="font-bold text-lg">딜러별 판매 실적</h3>
-                <input id="search-input" 
-                       type="text" 
-                       placeholder="딜러명 검색..." 
-                       onkeyup="filterTable()"
-                       class="border border-slate-300 rounded-2xl px-4 py-2 text-sm focus:outline-none focus:border-slate-400 w-64">
+        <!-- 테이블 -->
+        <div class="bg-white rounded-3xl card-shadow overflow-hidden">
+            <div class="px-8 py-5 border-b bg-slate-50 flex justify-between items-center">
+                <h3 class="font-semibold">딜러별 판매 실적</h3>
+                <input id="search-input" placeholder="딜러명 검색..." onkeyup="filterTable()" 
+                       class="border border-slate-300 rounded-full px-5 py-2 text-sm w-72 focus:outline-none">
             </div>
             <div class="overflow-x-auto">
-                <table class="w-full text-left">
-                    <thead>
-                        <tr class="bg-white text-xs font-bold text-slate-400 uppercase tracking-widest border-b">
-                            <th class="px-8 py-5">딜러명</th>
-                            <th class="px-8 py-5 text-right">당월 판매</th>
-                            <th class="px-8 py-5 text-right bg-slate-50 font-black">2026 누계</th>
-                            <th class="px-8 py-5 text-right font-black">5년 평균 대비</th>
+                <table class="w-full">
+                    <thead class="bg-white text-xs text-slate-400">
+                        <tr>
+                            <th class="text-left px-8 py-4">딜러명</th>
+                            <th class="text-right px-8 py-4">당월</th>
+                            <th class="text-right px-8 py-4">2026 누계</th>
+                            <th class="text-right px-8 py-4">5년 평균 대비</th>
                         </tr>
                     </thead>
                     <tbody id="dealer-list" class="divide-y text-sm"></tbody>
@@ -106,16 +93,16 @@
     <script>
         const GITHUB_USER = "jeongkihyun25-arch";
         const REPO_NAME = "Dashboard";
-        const t = Date.now();
-        const URL_HIST = `https://raw.githubusercontent.com/${GITHUB_USER}/${REPO_NAME}/main/historical_data.xlsx?t=${t}`;
-        const URL_CURR = `https://raw.githubusercontent.com/${GITHUB_USER}/${REPO_NAME}/main/current_sales.xls?t=${t}`;
+        const URL_CURR = `https://raw.githubusercontent.com/${GITHUB_USER}/${REPO_NAME}/main/current_sales.xls?t=${Date.now()}`;
 
-        let rawCurrent = [], rawHistory = [];
+        let rawCurrent = [];
         let filterSize = 'ALL';
         let filterPattern = 'ALL';
-        let currentMonthNum = new Date().getMonth() + 1;
 
-        // ==================== 필터 (235 사이즈 완전 제외) ====================
+        // 오늘 날짜 기준으로 자동 월 계산
+        const today = new Date();
+        const currentMonthNum = today.getMonth() + 1;   // 1~12월
+
         const isStrictTarget = (row, header) => {
             const mtpIdx = header.findIndex(v => String(v || '').toUpperCase().includes('MTP분류'));
             const deptIdx = header.findIndex(v => String(v || '').includes('이익부서'));
@@ -129,9 +116,7 @@
             const size = String(row[sizeIdx] || '').trim();
             const qty = parseFloat(String(row[qtyIdx] || '0').replace(/,/g, '')) || 0;
 
-            // 235 사이즈 완전 제외
             if (size.includes('235')) return false;
-
             if (qty <= 0) return false;
             if (dept.includes('경영계획')) return false;
 
@@ -141,22 +126,21 @@
             return isLSR2 || is17_5_TBR;
         };
 
-        const matchSize = (size, fs) => {
-            if (fs === 'ALL') return true;
-            return String(size || '').includes(fs);
-        };
+        async function loadData() {
+            try {
+                const res = await fetch(URL_CURR);
+                if (!res.ok) throw new Error("파일 로드 실패");
 
-        const matchPattern = (p, fp) => {
-            if (fp === 'ALL') return true;
-            const pat = String(p || '').toUpperCase();
-            return fp === 'RS002' ? pat.includes('STEER') : pat.includes('DRIVE');
-        };
+                const ab = await res.arrayBuffer();
+                const wb = XLSX.read(new Uint8Array(ab), {type: 'array'});
+                const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
 
-        async function fetchRaw(url) {
-            const res = await fetch(url);
-            const ab = await res.arrayBuffer();
-            const wb = XLSX.read(new Uint8Array(ab), { type: 'array' });
-            return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
+                rawCurrent = processCurrent(rows);
+                render();
+            } catch (e) {
+                console.error(e);
+                alert("current_sales.xls 파일을 불러올 수 없습니다.\nGitHub에 최신 파일을 업로드했는지 확인해주세요.");
+            }
         }
 
         function processCurrent(rows) {
@@ -168,10 +152,14 @@
             const idxS = h.findIndex(v => v.includes('SIZE') || v.includes('사이즈'));
             const idxP = h.findIndex(v => v.includes('PTTN') || v.includes('패턴'));
 
+            // 당월 QTY 열 찾기 (2026-04 QTY 형태)
             let idxMonth = -1;
-            const monthKey = `2026-${currentMonthNum < 10 ? '0' : ''}${currentMonthNum}`;
+            const monthStr = `2026-${currentMonthNum < 10 ? '0' : ''}${currentMonthNum}`;
             for (let i = 0; i < h.length; i++) {
-                if (String(h[i]).includes(monthKey)) { idxMonth = i; break; }
+                if (String(h[i]).includes(monthStr) && String(h[i]).includes('QTY')) {
+                    idxMonth = i;
+                    break;
+                }
             }
             if (idxMonth === -1) {
                 for (let i = h.length - 1; i >= 0; i--) {
@@ -197,45 +185,54 @@
             return result;
         }
 
-        function processHistory(rows) {
-            const result = [];
-            if (rows.length < 2) return result;
-            const h = rows[0].map(v => String(v || '').trim());
+        function render() {
+            const cur = rawCurrent.filter(r => 
+                (filterSize === 'ALL' || r.s.includes(filterSize)) &&
+                (filterPattern === 'ALL' || 
+                 (filterPattern === 'RS002' && r.p.toUpperCase().includes('STEER')) ||
+                 (filterPattern === 'RD002' && r.p.toUpperCase().includes('DRIVE')))
+            );
 
-            const idxD = 0;
-            const idxS = h.findIndex(v => v.includes('사이즈') || v.includes('SIZE'));
-            const idxP = h.findIndex(v => v.includes('패턴명'));
-            const idxAvg = h.findIndex(v => v.includes('5년평균'));
+            let totalYTD = 0, totalMonth = 0;
+            const dealerMap = {};
 
-            for (let i = 1; i < rows.length; i++) {
-                const r = rows[i];
-                if (!r) continue;
-                const sizeStr = String(r[idxS] || '');
-                if (!sizeStr.includes('17.5') || sizeStr.includes('235')) continue;
+            cur.forEach(r => {
+                totalYTD += r.y;
+                totalMonth += r.m;
+                if (!dealerMap[r.d]) dealerMap[r.d] = { y:0, m:0, details:[] };
+                dealerMap[r.d].y += r.y;
+                dealerMap[r.d].m += r.m;
+                dealerMap[r.d].details.push(r);
+            });
 
-                result.push({
-                    d: String(r[idxD] || '기타').trim(),
-                    s: sizeStr,
-                    p: String(r[idxP] || ''),
-                    a: parseFloat(r[idxAvg] || 0) || 0
-                });
-            }
-            return result;
-        }
-
-        async function init() {
+            document.getElementById('ytd-val').innerText = Math.round(totalYTD).toLocaleString();
+            document.getElementById('month-val').innerText = Math.round(totalMonth).toLocaleString();
             document.getElementById('month-label').innerText = `당월 실적 (${currentMonthNum}월)`;
+            document.getElementById('row-count').innerText = `필터 적용 ${cur.length}건`;
 
-            try {
-                const [histRows, currRows] = await Promise.all([fetchRaw(URL_HIST), fetchRaw(URL_CURR)]);
-                rawCurrent = processCurrent(currRows);
-                rawHistory = processHistory(histRows);
+            const tbody = document.getElementById('dealer-list');
+            tbody.innerHTML = '';
 
-                console.log(`✅ 처리된 Current 행 수: ${rawCurrent.length}`);
-                render();
-            } catch (e) {
-                console.error("데이터 로드 실패:", e);
-            }
+            Object.entries(dealerMap).sort((a,b) => b[1].y - a[1].y).forEach(([name, d], idx) => {
+                const detailId = `detail-${idx}`;
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 cursor-pointer" onclick="toggleRow('${detailId}')">
+                        <td class="px-8 py-5 font-semibold">${name}</td>
+                        <td class="px-8 py-5 text-right text-slate-500">${Math.round(d.m).toLocaleString()}</td>
+                        <td class="px-8 py-5 text-right font-black bstk-red">${Math.round(d.y).toLocaleString()}</td>
+                        <td class="px-8 py-5 text-right text-slate-600">—</td>
+                    </tr>
+                    <tr id="${detailId}" class="hidden bg-slate-50">
+                        <td colspan="4" class="px-8 py-4">
+                            <div class="bg-white border rounded-2xl p-5 text-xs">
+                                <table class="w-full">
+                                    <thead><tr class="text-slate-400"><th class="text-left">규격</th><th class="text-left">패턴</th><th class="text-right">누적</th></tr></thead>
+                                    <tbody>${d.details.map(item => `<tr><td>${item.s}</td><td>${item.p}</td><td class="text-right bstk-red">${Math.round(item.y).toLocaleString()}</td></tr>`).join('')}</tbody>
+                                </table>
+                            </div>
+                        </td>
+                    </tr>`;
+            });
         }
 
         window.setFilter = function(type, value) {
@@ -244,22 +241,18 @@
 
             ['sz-ALL','sz-205','sz-215','sz-225','pt-ALL','pt-RS002','pt-RD002'].forEach(id => {
                 const btn = document.getElementById(id);
-                if (btn) {
-                    btn.className = id.includes(value) || (value === 'ALL' && id.includes('ALL'))
-                        ? 'filter-btn filter-active px-6 py-2.5 rounded-2xl text-sm font-semibold'
-                        : 'filter-btn filter-inactive px-6 py-2.5 rounded-2xl text-sm font-semibold';
-                }
+                if (btn) btn.className = id.includes(value) || (value === 'ALL' && id.includes('ALL'))
+                    ? 'filter-btn filter-active px-6 py-2.5 rounded-2xl text-sm font-semibold'
+                    : 'filter-btn filter-inactive px-6 py-2.5 rounded-2xl text-sm font-semibold';
             });
             render();
         };
 
         function filterTable() {
             const term = document.getElementById('search-input').value.toLowerCase().trim();
-            const rows = document.querySelectorAll('#dealer-list tr');
-            rows.forEach(row => {
-                if (row.id && row.id.startsWith('detail-')) return;
-                const text = row.textContent.toLowerCase();
-                row.style.display = text.includes(term) ? '' : 'none';
+            document.querySelectorAll('#dealer-list tr').forEach(tr => {
+                if (tr.id && tr.id.startsWith('detail-')) return;
+                tr.style.display = tr.textContent.toLowerCase().includes(term) ? '' : 'none';
             });
         }
 
@@ -268,78 +261,7 @@
             if (el) el.classList.toggle('hidden');
         }
 
-        function render() {
-            const cur = rawCurrent.filter(r => matchSize(r.s, filterSize) && matchPattern(r.p, filterPattern));
-            const his = rawHistory.filter(r => matchSize(r.s, filterSize));
-
-            let totalYTD = 0, totalMonth = 0, totalAvg = 0;
-            const dealerMap = {};
-
-            cur.forEach(r => {
-                totalYTD += r.y;
-                totalMonth += r.m;
-                if (!dealerMap[r.d]) dealerMap[r.d] = { y:0, m:0, a:0, details:[] };
-                dealerMap[r.d].y += r.y;
-                dealerMap[r.d].m += r.m;
-                dealerMap[r.d].details.push(r);
-            });
-
-            his.forEach(r => {
-                const prorated = (r.a / 12) * currentMonthNum;
-                totalAvg += prorated;
-                if (dealerMap[r.d]) dealerMap[r.d].a += prorated;
-            });
-
-            document.getElementById('ytd-val').innerText = Math.round(totalYTD).toLocaleString();
-            document.getElementById('month-val').innerText = Math.round(totalMonth).toLocaleString();
-            document.getElementById('row-count').innerText = `필터 적용 ${cur.length}건`;
-
-            const pct = totalAvg > 0 ? Math.round((totalYTD / totalAvg) * 100) : 0;
-            document.getElementById('attainment-pct').innerText = pct + "%";
-            document.getElementById('attainment-bar').style.width = Math.min(pct, 100) + "%";
-
-            const tbody = document.getElementById('dealer-list');
-            tbody.innerHTML = '';
-
-            Object.entries(dealerMap).sort((a,b) => b[1].y - a[1].y).forEach(([name, d], idx) => {
-                const dPct = d.a > 0 ? Math.round((d.y / d.a) * 100) : 0;
-                const detailId = `detail-${idx}`;
-
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-50 cursor-pointer" onclick="toggleRow('${detailId}')">
-                        <td class="px-8 py-5 font-semibold">${name}</td>
-                        <td class="px-8 py-5 text-right text-slate-500">${Math.round(d.m).toLocaleString()}</td>
-                        <td class="px-8 py-5 text-right font-black bstk-red">${Math.round(d.y).toLocaleString()}</td>
-                        <td class="px-8 py-5 text-right font-semibold ${dPct >= 100 ? 'text-emerald-600' : 'text-slate-600'}">${dPct}%</td>
-                    </tr>
-                    <tr id="${detailId}" class="hidden bg-slate-50">
-                        <td colspan="4" class="px-8 py-4">
-                            <div class="bg-white border rounded-2xl p-5">
-                                <table class="w-full text-xs">
-                                    <thead>
-                                        <tr class="text-slate-400 border-b">
-                                            <th class="py-2 text-left">규격</th>
-                                            <th class="py-2 text-left">패턴</th>
-                                            <th class="py-2 text-right">누적 판매</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${d.details.map(item => `
-                                            <tr class="border-b last:border-0">
-                                                <td class="py-2">${item.s}</td>
-                                                <td class="py-2 text-slate-500">${item.p}</td>
-                                                <td class="py-2 text-right font-medium bstk-red">${Math.round(item.y).toLocaleString()}</td>
-                                            </tr>
-                                        `).join('')}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </td>
-                    </tr>`;
-            });
-        }
-
-        window.onload = init;
+        window.onload = loadData;
     </script>
 </body>
 </html>
