@@ -25,7 +25,7 @@
                 <div class="bg-bstk-red text-white font-black px-3 py-1 rounded-lg text-sm italic shadow-md">BSTK</div>
                 <h1 class="text-lg font-black text-slate-800 tracking-tight">LT WG 실적 확인</h1>
             </div>
-            <div id="status" class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100 uppercase italic tracking-widest">Target Filter Applied</div>
+            <div id="status" class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100 uppercase italic">Strict Filter Mode Active</div>
         </div>
     </header>
 
@@ -53,16 +53,16 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
             <div class="bg-white p-8 rounded-[2.5rem] card-shadow border border-slate-100">
-                <p class="text-[11px] font-bold text-slate-400 uppercase mb-3 italic">2026 누적 실적 (YTD)</p>
+                <p class="text-[11px] font-bold text-slate-400 uppercase mb-3">2026 누적 실적 (YTD)</p>
                 <div class="flex items-baseline gap-2 mb-2">
                     <span id="ytd-val" class="text-6xl font-black tracking-tighter">0</span>
                     <span class="text-slate-300 font-bold text-xl">본</span>
                 </div>
-                <p class="text-[10px] text-slate-400 font-bold italic">* 실판매 데이터 전용 (경영계획 제외)</p>
+                <p class="text-[10px] text-slate-400 font-bold italic">* 경영계획 제외 / 실판매 데이터만 집계</p>
             </div>
 
             <div class="bg-white p-8 rounded-[2.5rem] card-shadow border border-slate-100 border-t-4 border-t-red-500">
-                <p id="month-label" class="text-[11px] font-bold text-slate-400 uppercase mb-3 italic">당월 실적</p>
+                <p id="month-label" class="text-[11px] font-bold text-slate-400 uppercase mb-3">당월 실적</p>
                 <div class="flex items-baseline gap-2 bstk-red">
                     <span id="month-val" class="text-6xl font-black tracking-tighter">0</span>
                     <span class="text-slate-300 font-bold text-xl">본</span>
@@ -76,7 +76,7 @@
                     <div id="attainment-bar" class="bg-emerald-400 h-full transition-all duration-1000" style="width: 0%"></div>
                 </div>
                 <p class="text-[10px] text-slate-300 italic">
-                    <span class="text-white font-bold underline decoration-red-500 underline-offset-4">비교 기준:</span> 현재 실적을 과거 동일 사이즈 전체(RS/RD/R156 등)의 5년 평균 페이스와 비교합니다.
+                    <span class="text-white font-bold underline decoration-red-500">도달률 산출:</span> RS/RD는 신제품이므로, 과거의 모든 동일 사이즈 제품(R156 등) 전체 실적의 5년 평균 페이스와 비교합니다.
                 </p>
             </div>
         </div>
@@ -114,7 +114,7 @@
 
         let rawCurrent = [], rawHistory = [], filterSize = 'ALL', filterPattern = 'ALL', currentMonthNum = 1;
 
-        // **정밀 필터링 로직 업데이트**
+        // **팀장님 요청 100% 반영: MTP분류 정밀 매칭 및 이익부서 경영계획 제외**
         const isTargetRecord = (row, h) => {
             const mtpIdx = h.findIndex(v => v.includes('MTP분류'));
             const deptIdx = h.findIndex(v => v.includes('이익부서'));
@@ -124,11 +124,11 @@
             const dept = String(row[deptIdx] || '').trim();
             const size = String(row[sizeIdx] || '').replace(/[^0-9]/g, '');
 
-            // 1. MTP분류: LSR2 또는 TBR T/L 17.5 포함
-            const isTargetMTP = mtp === 'LSR2' || mtp.includes('17.5');
-            // 2. 이익부서: '경영계획' 제외
+            // 1. MTP분류: 'LSR2' 또는 'TBR T/L 17.5 down'만 허용
+            const isTargetMTP = mtp === 'LSR2' || mtp === 'TBR T/L 17.5 down';
+            // 2. 이익부서: '경영계획'은 실판매가 아니므로 절대 제외
             const isNotPlan = dept !== '경영계획';
-            // 3. 규격: 정확히 17.5인치 트럭 규격 (205, 215, 225)
+            // 3. 규격: 17.5인치 트럭 규격 (205, 215, 225)만 허용
             const isCorrectSize = size.startsWith('20575175') || size.startsWith('21575175') || size.startsWith('22575175');
             
             return isTargetMTP && isNotPlan && isCorrectSize;
@@ -204,7 +204,7 @@
 
         function render() {
             const cur = rawCurrent.filter(r => matchFilterSize(r.s, filterSize) && matchPattern(r.p, filterPattern));
-            const his = rawHistory.filter(r => matchFilterSize(r.s, filterSize)); // 사이즈 기준으로 과거 전체 실적 합산
+            const his = rawHistory.filter(r => matchFilterSize(r.s, filterSize)); 
 
             let sY = 0, sM = 0, sA = 0;
             const dMap = {};
