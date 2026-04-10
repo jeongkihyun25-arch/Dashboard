@@ -21,14 +21,20 @@
         <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
             <div class="flex items-center gap-4">
                 <div class="bg-bstk-red text-white font-black px-3 py-1 rounded text-sm">BSTK</div>
-                <h1 class="text-xl font-black">17.5인치 TBR 실적 대시보드 <span class="text-sm font-normal text-slate-400">(235 제외)</span></h1>
+                <h1 class="text-xl font-black">17.5인치 TBR 실적 대시보드 <span class="text-sm font-normal text-slate-400">(235 제외 · 마이너스 제외)</span></h1>
             </div>
-            <div id="row-count" class="text-xs text-slate-500"></div>
+            <div class="flex items-center gap-4">
+                <select id="month-select" onchange="changeMonth()" 
+                        class="border border-slate-300 rounded-2xl px-4 py-2 text-sm font-medium focus:outline-none">
+                    <!-- JS에서 동적으로 채움 -->
+                </select>
+                <div id="row-count" class="text-xs text-slate-500 font-medium"></div>
+            </div>
         </div>
     </header>
 
     <main class="max-w-7xl mx-auto px-6 py-8">
-        <!-- 필터 -->
+        <!-- 규격/패턴 필터 -->
         <div class="bg-white p-6 rounded-3xl card-shadow border border-slate-100 mb-8 flex flex-wrap gap-8">
             <div>
                 <span class="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-2">규격 선택</span>
@@ -52,8 +58,8 @@
         <!-- 요약 카드 -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
             <div class="bg-white p-8 rounded-3xl card-shadow">
-                <p class="text-sm text-slate-500">2026년 누적 실적</p>
-                <div id="ytd-val" class="text-6xl font-black tracking-tighter">0</div>
+                <p class="text-sm text-slate-500">2026년 누적 실적 <span id="cumulative-label" class="text-xs">(1~<span id="cum-month"></span>월)</span></p>
+                <div id="ytd-val" class="text-6xl font-black tracking-tighter bstk-red">0</div>
                 <span class="text-xl text-slate-300">본</span>
             </div>
             <div class="bg-white p-8 rounded-3xl card-shadow border-t-4 border-red-500">
@@ -62,12 +68,12 @@
                 <span class="text-xl text-slate-300">본</span>
             </div>
             <div class="bg-slate-900 p-8 rounded-3xl card-shadow text-white">
-                <p class="text-sm text-slate-400">5년 평균 대비</p>
+                <p class="text-sm text-slate-400">5년 동일기간 평균 대비</p>
                 <div id="attainment-pct" class="text-6xl font-black">0%</div>
             </div>
         </div>
 
-        <!-- 테이블 -->
+        <!-- 딜러 테이블 -->
         <div class="bg-white rounded-3xl card-shadow overflow-hidden">
             <div class="px-8 py-5 border-b bg-slate-50 flex justify-between items-center">
                 <h3 class="font-semibold">딜러별 판매 실적</h3>
@@ -80,8 +86,8 @@
                         <tr>
                             <th class="text-left px-8 py-4">딜러명</th>
                             <th class="text-right px-8 py-4">당월</th>
-                            <th class="text-right px-8 py-4">2026 누계</th>
-                            <th class="text-right px-8 py-4">5년 평균 대비</th>
+                            <th class="text-right px-8 py-4">누계</th>
+                            <th class="text-right px-8 py-4">5년 동일기간 대비</th>
                         </tr>
                     </thead>
                     <tbody id="dealer-list" class="divide-y text-sm"></tbody>
@@ -94,14 +100,13 @@
         const GITHUB_USER = "jeongkihyun25-arch";
         const REPO_NAME = "Dashboard";
         const URL_CURR = `https://raw.githubusercontent.com/${GITHUB_USER}/${REPO_NAME}/main/current_sales.xls?t=${Date.now()}`;
+        const URL_HIST = `https://raw.githubusercontent.com/${GITHUB_USER}/${REPO_NAME}/main/historical_data.xlsx?t=${Date.now()}`;
 
         let rawCurrent = [];
+        let rawHistory = [];
         let filterSize = 'ALL';
         let filterPattern = 'ALL';
-
-        // 오늘 날짜 기준으로 자동 월 계산
-        const today = new Date();
-        const currentMonthNum = today.getMonth() + 1;   // 1~12월
+        let selectedMonth = new Date().getMonth() + 1;   // 기본 = 오늘 월
 
         const isStrictTarget = (row, header) => {
             const mtpIdx = header.findIndex(v => String(v || '').toUpperCase().includes('MTP분류'));
@@ -121,69 +126,110 @@
             if (dept.includes('경영계획')) return false;
 
             const isLSR2 = mtp === 'LSR2';
-            const is17_5_TBR = mtp.includes('17.5') && (mtp.includes('DOWN') || mtp.includes('T/L'));
+            const is17_5_TBR = mtp.includes('17.5') && (mtp.includes('DOWN') || mtp.includes('T/L') || mtp.includes('TBR'));
 
             return isLSR2 || is17_5_TBR;
         };
 
         async function loadData() {
             try {
-                const res = await fetch(URL_CURR);
-                if (!res.ok) throw new Error("파일 로드 실패");
+                const [currRes, histRes] = await Promise.all([fetch(URL_CURR), fetch(URL_HIST)]);
+                const currAb = await currRes.arrayBuffer();
+                const histAb = await histRes.arrayBuffer();
 
-                const ab = await res.arrayBuffer();
-                const wb = XLSX.read(new Uint8Array(ab), {type: 'array'});
-                const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
+                const currWb = XLSX.read(new Uint8Array(currAb), {type: 'array'});
+                const histWb = XLSX.read(new Uint8Array(histAb), {type: 'array'});
 
-                rawCurrent = processCurrent(rows);
+                rawCurrent = processCurrent(currWb.Sheets[currWb.SheetNames[0]]);
+                rawHistory = processHistory(histWb.Sheets[histWb.SheetNames[0]]);
+
+                initMonthSelector();
                 render();
             } catch (e) {
                 console.error(e);
-                alert("current_sales.xls 파일을 불러올 수 없습니다.\nGitHub에 최신 파일을 업로드했는지 확인해주세요.");
+                alert("파일 로드 실패\nGitHub에 최신 파일이 업로드되었는지 확인해주세요.");
             }
         }
 
-        function processCurrent(rows) {
-            const result = [];
-            if (rows.length < 2) return result;
+        function processCurrent(sheet) {
+            const rows = XLSX.utils.sheet_to_json(sheet, {header: 1});
+            if (rows.length < 2) return [];
             const h = rows[0].map(v => String(v || '').trim());
 
             const idxD = h.findIndex(v => v.includes('거래처') || v.includes('딜러'));
             const idxS = h.findIndex(v => v.includes('SIZE') || v.includes('사이즈'));
             const idxP = h.findIndex(v => v.includes('PTTN') || v.includes('패턴'));
 
-            // 당월 QTY 열 찾기 (2026-04 QTY 형태)
-            let idxMonth = -1;
-            const monthStr = `2026-${currentMonthNum < 10 ? '0' : ''}${currentMonthNum}`;
-            for (let i = 0; i < h.length; i++) {
-                if (String(h[i]).includes(monthStr) && String(h[i]).includes('QTY')) {
-                    idxMonth = i;
-                    break;
-                }
-            }
-            if (idxMonth === -1) {
-                for (let i = h.length - 1; i >= 0; i--) {
-                    if (String(h[i]).includes('QTY')) { idxMonth = i; break; }
-                }
-            }
-
-            const idxYTD = h.length - 1;
-
+            const result = [];
             for (let i = 1; i < rows.length; i++) {
                 const r = rows[i];
-                if (!r) continue;
-                if (!isStrictTarget(r, h)) continue;
+                if (!r || !isStrictTarget(r, h)) continue;
+
+                const y = parseFloat(String(r[h.length - 1] || '0').replace(/,/g, '')) || 0;
+
+                // 모든 월별 QTY 저장 (동적 월 선택을 위해)
+                const monthly = {};
+                for (let m = 1; m <= 12; m++) {
+                    const monthKey = `2026-${m < 10 ? '0' : ''}${m}`;
+                    const colIdx = h.findIndex(v => String(v).includes(monthKey) && String(v).includes('QTY'));
+                    if (colIdx !== -1) {
+                        monthly[m] = parseFloat(String(r[colIdx] || '0').replace(/,/g, '')) || 0;
+                    }
+                }
 
                 result.push({
                     d: String(r[idxD] || '기타').trim(),
                     s: String(r[idxS] || ''),
                     p: String(r[idxP] || ''),
-                    y: parseFloat(String(r[idxYTD] || '0').replace(/,/g, '')) || 0,
-                    m: idxMonth !== -1 ? parseFloat(String(r[idxMonth] || '0').replace(/,/g, '')) || 0 : 0
+                    y: y,
+                    monthly: monthly
                 });
             }
             return result;
         }
+
+        function processHistory(sheet) {
+            const rows = XLSX.utils.sheet_to_json(sheet, {header: 1});
+            if (rows.length < 2) return [];
+            const h = rows[0].map(v => String(v || '').trim());
+
+            const idxD = 0;
+            const idxS = h.findIndex(v => v.includes('사이즈'));
+            const idxP = h.findIndex(v => v.includes('패턴명'));
+            const idxAvg = h.findIndex(v => v.includes('5년평균'));
+
+            const result = [];
+            for (let i = 1; i < rows.length; i++) {
+                const r = rows[i];
+                if (!r) continue;
+                if (String(r[idxS] || '').includes('235')) continue;
+
+                result.push({
+                    d: String(r[idxD] || '기타').trim(),
+                    s: String(r[idxS] || ''),
+                    p: String(r[idxP] || ''),
+                    a: parseFloat(r[idxAvg] || 0) || 0
+                });
+            }
+            return result;
+        }
+
+        function initMonthSelector() {
+            const select = document.getElementById('month-select');
+            select.innerHTML = '';
+            for (let m = 1; m <= 12; m++) {
+                const option = document.createElement('option');
+                option.value = m;
+                option.textContent = `${m}월`;
+                if (m === selectedMonth) option.selected = true;
+                select.appendChild(option);
+            }
+        }
+
+        window.changeMonth = function() {
+            selectedMonth = parseInt(document.getElementById('month-select').value);
+            render();
+        };
 
         function render() {
             const cur = rawCurrent.filter(r => 
@@ -193,34 +239,49 @@
                  (filterPattern === 'RD002' && r.p.toUpperCase().includes('DRIVE')))
             );
 
-            let totalYTD = 0, totalMonth = 0;
+            let totalYTD = 0, totalMonth = 0, totalHist = 0;
             const dealerMap = {};
 
             cur.forEach(r => {
-                totalYTD += r.y;
-                totalMonth += r.m;
-                if (!dealerMap[r.d]) dealerMap[r.d] = { y:0, m:0, details:[] };
-                dealerMap[r.d].y += r.y;
-                dealerMap[r.d].m += r.m;
-                dealerMap[r.d].details.push(r);
+                const mQty = r.monthly[selectedMonth] || 0;
+                const ytdQty = r.y;   // 합계수량 = 누적
+
+                totalYTD += ytdQty;
+                totalMonth += mQty;
+
+                if (!dealerMap[r.d]) dealerMap[r.d] = {y:0, m:0, a:0, details:[]};
+                dealerMap[r.d].y += ytdQty;
+                dealerMap[r.d].m += mQty;
+                dealerMap[r.d].details.push({...r, m: mQty});
+            });
+
+            rawHistory.forEach(r => {
+                const prorated = (r.a / 12) * selectedMonth;
+                totalHist += prorated;
+                if (dealerMap[r.d]) dealerMap[r.d].a += prorated;
             });
 
             document.getElementById('ytd-val').innerText = Math.round(totalYTD).toLocaleString();
             document.getElementById('month-val').innerText = Math.round(totalMonth).toLocaleString();
-            document.getElementById('month-label').innerText = `당월 실적 (${currentMonthNum}월)`;
-            document.getElementById('row-count').innerText = `필터 적용 ${cur.length}건`;
+            document.getElementById('month-label').innerText = `${selectedMonth}월 실적`;
+            document.getElementById('cum-month').innerText = selectedMonth;
+            document.getElementById('row-count').innerText = `처리 행 ${cur.length}건`;
+
+            const pct = totalHist > 0 ? Math.round((totalYTD / totalHist) * 100) : 0;
+            document.getElementById('attainment-pct').innerText = pct + "%";
 
             const tbody = document.getElementById('dealer-list');
             tbody.innerHTML = '';
 
             Object.entries(dealerMap).sort((a,b) => b[1].y - a[1].y).forEach(([name, d], idx) => {
+                const dPct = d.a > 0 ? Math.round((d.y / d.a) * 100) : 0;
                 const detailId = `detail-${idx}`;
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-50 cursor-pointer" onclick="toggleRow('${detailId}')">
                         <td class="px-8 py-5 font-semibold">${name}</td>
                         <td class="px-8 py-5 text-right text-slate-500">${Math.round(d.m).toLocaleString()}</td>
                         <td class="px-8 py-5 text-right font-black bstk-red">${Math.round(d.y).toLocaleString()}</td>
-                        <td class="px-8 py-5 text-right text-slate-600">—</td>
+                        <td class="px-8 py-5 text-right ${dPct >= 100 ? 'text-emerald-600' : 'text-slate-600'}">${dPct}%</td>
                     </tr>
                     <tr id="${detailId}" class="hidden bg-slate-50">
                         <td colspan="4" class="px-8 py-4">
@@ -238,7 +299,6 @@
         window.setFilter = function(type, value) {
             if (type === 'size') filterSize = value;
             else filterPattern = value;
-
             ['sz-ALL','sz-205','sz-215','sz-225','pt-ALL','pt-RS002','pt-RD002'].forEach(id => {
                 const btn = document.getElementById(id);
                 if (btn) btn.className = id.includes(value) || (value === 'ALL' && id.includes('ALL'))
