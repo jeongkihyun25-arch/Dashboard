@@ -24,9 +24,7 @@
                 <h1 class="text-xl font-black">17.5인치 TBR 실적 대시보드 <span class="text-sm font-normal text-slate-400">(235 제외 · 마이너스 제외)</span></h1>
             </div>
             <div class="flex items-center gap-4">
-                <select id="month-select" onchange="changeMonth()" 
-                        class="border border-slate-300 rounded-2xl px-4 py-2 text-sm font-medium focus:outline-none">
-                    <!-- JS에서 동적으로 채움 -->
+                <select id="month-select" onchange="changeMonth()" class="border border-slate-300 rounded-2xl px-4 py-2 text-sm font-medium focus:outline-none">
                 </select>
                 <div id="row-count" class="text-xs text-slate-500 font-medium"></div>
             </div>
@@ -34,7 +32,6 @@
     </header>
 
     <main class="max-w-7xl mx-auto px-6 py-8">
-        <!-- 규격/패턴 필터 -->
         <div class="bg-white p-6 rounded-3xl card-shadow border border-slate-100 mb-8 flex flex-wrap gap-8">
             <div>
                 <span class="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-2">규격 선택</span>
@@ -55,10 +52,9 @@
             </div>
         </div>
 
-        <!-- 요약 카드 -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
             <div class="bg-white p-8 rounded-3xl card-shadow">
-                <p class="text-sm text-slate-500">2026년 누적 실적 <span id="cumulative-label" class="text-xs">(1~<span id="cum-month"></span>월)</span></p>
+                <p class="text-sm text-slate-500">2026년 누적 실적 <span id="cum-label" class="text-xs">(1~<span id="cum-month">4</span>월)</span></p>
                 <div id="ytd-val" class="text-6xl font-black tracking-tighter bstk-red">0</div>
                 <span class="text-xl text-slate-300">본</span>
             </div>
@@ -68,12 +64,11 @@
                 <span class="text-xl text-slate-300">본</span>
             </div>
             <div class="bg-slate-900 p-8 rounded-3xl card-shadow text-white">
-                <p class="text-sm text-slate-400">5년 동일기간 평균 대비</p>
+                <p class="text-sm text-slate-400">5년 평균 대비</p>
                 <div id="attainment-pct" class="text-6xl font-black">0%</div>
             </div>
         </div>
 
-        <!-- 딜러 테이블 -->
         <div class="bg-white rounded-3xl card-shadow overflow-hidden">
             <div class="px-8 py-5 border-b bg-slate-50 flex justify-between items-center">
                 <h3 class="font-semibold">딜러별 판매 실적</h3>
@@ -87,7 +82,7 @@
                             <th class="text-left px-8 py-4">딜러명</th>
                             <th class="text-right px-8 py-4">당월</th>
                             <th class="text-right px-8 py-4">누계</th>
-                            <th class="text-right px-8 py-4">5년 동일기간 대비</th>
+                            <th class="text-right px-8 py-4">5년 평균 대비</th>
                         </tr>
                     </thead>
                     <tbody id="dealer-list" class="divide-y text-sm"></tbody>
@@ -106,7 +101,7 @@
         let rawHistory = [];
         let filterSize = 'ALL';
         let filterPattern = 'ALL';
-        let selectedMonth = new Date().getMonth() + 1;   // 기본 = 오늘 월
+        let selectedMonth = 4;   // 기본 4월 (필요시 변경)
 
         const isStrictTarget = (row, header) => {
             const mtpIdx = header.findIndex(v => String(v || '').toUpperCase().includes('MTP분류'));
@@ -145,9 +140,10 @@
 
                 initMonthSelector();
                 render();
+                console.log(`✅ Current 행 수: ${rawCurrent.length} | History 행 수: ${rawHistory.length}`);
             } catch (e) {
                 console.error(e);
-                alert("파일 로드 실패\nGitHub에 최신 파일이 업로드되었는지 확인해주세요.");
+                alert("파일 로드 실패");
             }
         }
 
@@ -167,14 +163,11 @@
 
                 const y = parseFloat(String(r[h.length - 1] || '0').replace(/,/g, '')) || 0;
 
-                // 모든 월별 QTY 저장 (동적 월 선택을 위해)
                 const monthly = {};
                 for (let m = 1; m <= 12; m++) {
-                    const monthKey = `2026-${m < 10 ? '0' : ''}${m}`;
-                    const colIdx = h.findIndex(v => String(v).includes(monthKey) && String(v).includes('QTY'));
-                    if (colIdx !== -1) {
-                        monthly[m] = parseFloat(String(r[colIdx] || '0').replace(/,/g, '')) || 0;
-                    }
+                    const key = `2026-${m < 10 ? '0' : ''}${m}`;
+                    const colIdx = h.findIndex(v => String(v).includes(key) && String(v).includes('QTY'));
+                    if (colIdx !== -1) monthly[m] = parseFloat(String(r[colIdx] || '0').replace(/,/g, '')) || 0;
                 }
 
                 result.push({
@@ -208,7 +201,7 @@
                     d: String(r[idxD] || '기타').trim(),
                     s: String(r[idxS] || ''),
                     p: String(r[idxP] || ''),
-                    a: parseFloat(r[idxAvg] || 0) || 0
+                    a: parseFloat(r[idxAvg] || 0) || 0   // 5년 평균 그대로 사용
                 });
             }
             return result;
@@ -218,11 +211,11 @@
             const select = document.getElementById('month-select');
             select.innerHTML = '';
             for (let m = 1; m <= 12; m++) {
-                const option = document.createElement('option');
-                option.value = m;
-                option.textContent = `${m}월`;
-                if (m === selectedMonth) option.selected = true;
-                select.appendChild(option);
+                const opt = document.createElement('option');
+                opt.value = m;
+                opt.textContent = `${m}월`;
+                if (m === selectedMonth) opt.selected = true;
+                select.appendChild(opt);
             }
         }
 
@@ -239,26 +232,24 @@
                  (filterPattern === 'RD002' && r.p.toUpperCase().includes('DRIVE')))
             );
 
-            let totalYTD = 0, totalMonth = 0, totalHist = 0;
+            let totalYTD = 0, totalMonth = 0, total5yr = 0;
             const dealerMap = {};
 
             cur.forEach(r => {
                 const mQty = r.monthly[selectedMonth] || 0;
-                const ytdQty = r.y;   // 합계수량 = 누적
-
-                totalYTD += ytdQty;
+                totalYTD += r.y;
                 totalMonth += mQty;
 
                 if (!dealerMap[r.d]) dealerMap[r.d] = {y:0, m:0, a:0, details:[]};
-                dealerMap[r.d].y += ytdQty;
+                dealerMap[r.d].y += r.y;
                 dealerMap[r.d].m += mQty;
                 dealerMap[r.d].details.push({...r, m: mQty});
             });
 
+            // 5년 평균은 전체 누적으로만 비교 (proration 제거)
             rawHistory.forEach(r => {
-                const prorated = (r.a / 12) * selectedMonth;
-                totalHist += prorated;
-                if (dealerMap[r.d]) dealerMap[r.d].a += prorated;
+                total5yr += r.a;
+                if (dealerMap[r.d]) dealerMap[r.d].a += r.a;
             });
 
             document.getElementById('ytd-val').innerText = Math.round(totalYTD).toLocaleString();
@@ -267,7 +258,7 @@
             document.getElementById('cum-month').innerText = selectedMonth;
             document.getElementById('row-count').innerText = `처리 행 ${cur.length}건`;
 
-            const pct = totalHist > 0 ? Math.round((totalYTD / totalHist) * 100) : 0;
+            const pct = total5yr > 0 ? Math.round((totalYTD / total5yr) * 100) : 0;
             document.getElementById('attainment-pct').innerText = pct + "%";
 
             const tbody = document.getElementById('dealer-list');
