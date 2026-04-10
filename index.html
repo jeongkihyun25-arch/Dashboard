@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BSTK LT WG 실적 관리 시스템</title>
+    <title>BSTK LT WG 정밀 실적 관리</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -25,7 +25,7 @@
                 <div class="bg-bstk-red text-white font-black px-3 py-1 rounded-lg text-sm italic shadow-md">BSTK</div>
                 <h1 class="text-lg font-black text-slate-800 tracking-tight">LT WG 실적 확인</h1>
             </div>
-            <div id="status" class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100 uppercase tracking-widest italic">LSR2 Precision Filtered</div>
+            <div id="status" class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100 uppercase italic">LSR2 Precision Mode</div>
         </div>
     </header>
 
@@ -53,16 +53,16 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
             <div class="bg-white p-8 rounded-[2.5rem] card-shadow border border-slate-100">
-                <p class="text-[11px] font-bold text-slate-400 uppercase mb-3">2026 누적 실적 (YTD)</p>
+                <p class="text-[11px] font-bold text-slate-400 uppercase mb-3 italic">2026 누적 실적 (YTD)</p>
                 <div class="flex items-baseline gap-2 mb-2">
                     <span id="ytd-val" class="text-6xl font-black tracking-tighter">0</span>
                     <span class="text-slate-300 font-bold text-xl">본</span>
                 </div>
-                <p class="text-[10px] text-slate-400 font-bold italic">* 순수 판매량 (마이너스 제외)</p>
+                <p class="text-[10px] text-slate-400 font-bold">* 17.5" LSR2 전용 (마이너스 제외)</p>
             </div>
 
             <div class="bg-white p-8 rounded-[2.5rem] card-shadow border border-slate-100 border-t-4 border-t-red-500">
-                <p id="month-label" class="text-[11px] font-bold text-slate-400 uppercase mb-3">당월 실적</p>
+                <p id="month-label" class="text-[11px] font-bold text-slate-400 uppercase mb-3 italic">당월 실적</p>
                 <div class="flex items-baseline gap-2 bstk-red">
                     <span id="month-val" class="text-6xl font-black tracking-tighter">0</span>
                     <span class="text-slate-300 font-bold text-xl">본</span>
@@ -76,24 +76,21 @@
                     <div id="attainment-bar" class="bg-emerald-400 h-full transition-all duration-1000" style="width: 0%"></div>
                 </div>
                 <p class="text-[10px] text-slate-300 italic">
-                    <span class="text-white font-bold underline decoration-red-500">지표 설명:</span> 과거 5년 동기(N월) 평균 실적 대비 현재 성과. 100% 초과 시 예년보다 빠른 성장세.
+                    <span class="text-white font-bold underline decoration-red-500 underline-offset-4">비교 기준:</span> RS/RD는 신제품이므로, 과거의 모든 동일 사이즈 제품(R156, M729 등) 실적 합계와 비교합니다.
                 </p>
             </div>
         </div>
 
         <div class="bg-white rounded-[2.5rem] card-shadow border border-slate-100 overflow-hidden">
             <div class="px-8 py-6 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
-                <div class="flex items-center gap-3">
-                    <h3 class="font-black text-slate-800">딜러별 판매추이</h3>
-                    <span class="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[9px] font-black uppercase border border-blue-100">딜러명 클릭 시 상세 전개</span>
-                </div>
+                <h3 class="font-black text-slate-800 italic">딜러별 판매추이</h3>
                 <span class="text-[10px] font-bold text-slate-400 uppercase">정렬: 누적 판매량 순</span>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left whitespace-nowrap min-w-[800px]">
                     <thead>
                         <tr class="bg-white text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
-                            <th class="px-10 py-5">딜러명 (클릭)</th>
+                            <th class="px-10 py-5">딜러명 (클릭 시 상세)</th>
                             <th class="px-8 py-5 text-right">당월 판매</th>
                             <th class="px-8 py-5 text-right bg-slate-50/30 text-slate-900 font-black">2026 누계</th>
                             <th class="px-8 py-5 text-right font-black">5년 평균비</th>
@@ -114,22 +111,14 @@
 
         let rawCurrent = [], rawHistory = [], filterSize = 'ALL', filterPattern = 'ALL', currentMonthNum = 1;
 
-        // **핵심: TBR 대리점 혼입 및 175 오인 방지 로직**
-        const isStrictLSR = (row, h) => {
-            const mtpIdx = h.findIndex(v => v.includes('MTP분류'));
-            const sizeIdx = h.findIndex(v => v.includes('SIZE') || v.includes('사이즈'));
-            const mtp = String(row[mtpIdx] || '');
-            const size = String(row[sizeIdx] || '');
-            
-            // 1. 품목 분류가 오직 'LSR2'인 경우만 인정 (TBR/PCR 제외)
-            const isLSR2 = mtp.trim() === 'LSR2';
-            // 2. 사이즈가 17.5인치 트럭용 규격(75R17.5)과 정확히 매칭될 때만 인정
-            const isTruck175 = (size.includes('205/75R') || size.includes('215/75R') || size.includes('225/75R')) && size.includes('17.5');
-            
-            return isLSR2 && isTruck175;
+        // **정밀 필터링: LSR2이면서 정확한 트럭용 17.5인치 규격만 인정**
+        const normSize = (s) => String(s || '').replace(/[^0-9]/g, '');
+        const isTargetSize = (s) => {
+            const n = normSize(s);
+            return n.startsWith('20575175') || n.startsWith('21575175') || n.startsWith('22575175');
         };
 
-        const matchSize = (s, fs) => fs === 'ALL' || String(s).includes(fs);
+        const matchFilterSize = (s, fs) => fs === 'ALL' || String(s).includes(fs);
         const matchPattern = (p, fp) => {
             if(fp === 'ALL') return true;
             const up = String(p).toUpperCase();
@@ -161,6 +150,7 @@
             const idxD = h.findIndex(v => v.includes('거래처'));
             const idxS = h.findIndex(v => v.includes('SIZE') || v.includes('사이즈'));
             const idxP = h.findIndex(v => v.includes('PTTN') || v.includes('패턴'));
+            const idxMTP = h.findIndex(v => v.includes('MTP분류'));
             
             if(type === 'current') {
                 const idxY = h.findIndex(v => v.includes('합계수량'));
@@ -169,7 +159,7 @@
                 
                 for(let i=1; i<rows.length; i++) {
                     const r = rows[i];
-                    if(!r || !isStrictLSR(r, h)) continue;
+                    if(!r || String(r[idxMTP]) !== 'LSR2' || !isTargetSize(r[idxS])) continue;
                     const yVal = Math.max(0, parseFloat(String(r[idxY]||0).replace(/,/g,'')) || 0);
                     const mVal = Math.max(0, parseFloat(String(r[idxM]||0).replace(/,/g,'')) || 0);
                     if(yVal > 0) result.push({ d: String(r[idxD]||'기타').trim(), s: r[idxS], p: r[idxP], y: yVal, m: mVal });
@@ -178,7 +168,7 @@
                 const idxA = h.findIndex(v => v.includes('5년평균'));
                 for(let i=1; i<rows.length; i++) {
                     const r = rows[i];
-                    if(!r || !String(r[idxS]).includes('75R17.5')) continue;
+                    if(!r || !isTargetSize(r[idxS])) continue;
                     result.push({ d: String(r[idxD]||'기타').trim(), s: r[idxS], p: r[idxP], a: parseFloat(r[idxA]||0) });
                 }
             }
@@ -197,8 +187,9 @@
         function toggleRow(id) { document.getElementById(id).classList.toggle('hidden'); }
 
         function render() {
-            const cur = rawCurrent.filter(r => matchSize(r.s, filterSize) && matchPattern(r.p, filterPattern));
-            const his = rawHistory.filter(r => matchSize(r.s, filterSize) && matchPattern(r.p, filterPattern));
+            const cur = rawCurrent.filter(r => matchFilterSize(r.s, filterSize) && matchPattern(r.p, filterPattern));
+            const his = rawHistory.filter(r => matchFilterSize(r.s, filterSize)); // 히스토리는 패턴 상관없이 사이즈 전체 합산
+
             let sY = 0, sM = 0, sA = 0;
             const dMap = {};
 
@@ -209,6 +200,7 @@
                 dMap[r.d].details.push(r);
             });
 
+            // 히스토리 합계: 현재 필터링된 사이즈의 "모든" 과거 패턴 실적 합산
             his.forEach(r => {
                 const tA = (r.a/12)*currentMonthNum;
                 sA += tA;
@@ -226,28 +218,15 @@
             Object.entries(dMap).sort((a,b) => b[1].y - a[1].y).forEach(([n, d], idx) => {
                 const dPct = d.a > 0 ? Math.round((d.y/d.a)*100) : 0;
                 const detailId = `detail-${idx}`;
-                
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-50 cursor-pointer" onclick="toggleRow('${detailId}')">
-                        <td class="px-10 py-5 text-slate-700 flex items-center gap-2">
-                            <span class="text-blue-500 bg-blue-50 rounded w-4 h-4 flex items-center justify-center text-[10px]">+</span> ${n}
-                        </td>
+                        <td class="px-10 py-5 text-slate-700 font-bold flex items-center gap-2"><span class="text-blue-500 bg-blue-50 rounded w-4 h-4 flex items-center justify-center text-[10px]">+</span> ${n}</td>
                         <td class="px-8 py-5 text-right text-slate-400 font-medium">${d.m.toLocaleString()}</td>
                         <td class="px-8 py-5 text-right bg-slate-50/50 bstk-red font-black text-base">${d.y.toLocaleString()}</td>
                         <td class="px-8 py-5 text-right font-black ${dPct >= 100 ? 'text-emerald-600' : 'text-slate-500'}">${dPct}%</td>
                     </tr>
                     <tr id="${detailId}" class="hidden bg-slate-50/50">
-                        <td colspan="4" class="px-10 py-4">
-                            <div class="bg-white rounded-xl border border-slate-200 p-4">
-                                <table class="w-full text-xs text-left">
-                                    <thead><tr class="text-slate-400 border-b border-slate-100"><th class="pb-2">규격 & 패턴</th><th class="pb-2 text-right">2026 누계</th></tr></thead>
-                                    <tbody class="divide-y divide-slate-50">
-                                        ${d.details.map(det => `<tr><td class="py-2"><strong>${det.s}</strong> <span class="text-slate-400">${det.p}</span></td><td class="py-2 text-right bstk-red font-bold">${det.y.toLocaleString()}</td></tr>`).join('')}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </td>
-                    </tr>`;
+                        <td colspan="4" class="px-10 py-4"><div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"><table class="w-full text-xs text-left"><thead><tr class="text-slate-400 border-b border-slate-100"><th class="pb-2">규격 & 패턴</th><th class="pb-2 text-right">누적 판매</th></tr></thead><tbody class="divide-y divide-slate-50">${d.details.map(det => `<tr><td class="py-2"><strong>${det.s}</strong> <span class="text-slate-400">${det.p}</span></td><td class="py-2 text-right bstk-red font-bold">${det.y.toLocaleString()}</td></tr>`).join('')}</tbody></table></div></td></tr>`;
             });
         }
         window.onload = init;
