@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BSTK LT WG 정밀 실적 관리</title>
+    <title>BSTK LT WG 실적 관리 시스템</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -25,7 +25,7 @@
                 <div class="bg-bstk-red text-white font-black px-3 py-1 rounded-lg text-sm italic shadow-md">BSTK</div>
                 <h1 class="text-lg font-black text-slate-800 tracking-tight">LT WG 실적 확인</h1>
             </div>
-            <div id="status" class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100 uppercase italic">LSR2 Precision Mode</div>
+            <div id="status" class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100 uppercase italic tracking-widest">Target Filter Applied</div>
         </div>
     </header>
 
@@ -44,9 +44,9 @@
             <div class="flex items-center gap-3">
                 <span class="text-xs font-black text-slate-400 uppercase tracking-widest">패턴 선택</span>
                 <div class="flex gap-1.5">
-                    <button onclick="setFilter('pattern', 'ALL')" id="pt-ALL" class="filter-btn filter-active px-5 py-2 rounded-xl text-xs font-bold">전체</button>
-                    <button onclick="setFilter('pattern', 'RS002')" id="pt-RS002" class="filter-btn filter-inactive px-5 py-2 rounded-xl text-xs font-bold">RS002</button>
-                    <button onclick="setFilter('pattern', 'RD002')" id="pt-RD002" class="filter-btn filter-inactive px-5 py-2 rounded-xl text-xs font-bold">RD002</button>
+                    <button onclick="setFilter('pattern', 'ALL')" id="pt-ALL" class="filter-btn filter-active px-4 py-2 rounded-xl text-xs font-bold">전체</button>
+                    <button onclick="setFilter('pattern', 'RS002')" id="pt-RS002" class="filter-btn filter-inactive px-4 py-2 rounded-xl text-xs font-bold">RS002</button>
+                    <button onclick="setFilter('pattern', 'RD002')" id="pt-RD002" class="filter-btn filter-inactive px-4 py-2 rounded-xl text-xs font-bold">RD002</button>
                 </div>
             </div>
         </div>
@@ -58,7 +58,7 @@
                     <span id="ytd-val" class="text-6xl font-black tracking-tighter">0</span>
                     <span class="text-slate-300 font-bold text-xl">본</span>
                 </div>
-                <p class="text-[10px] text-slate-400 font-bold">* 17.5" LSR2 전용 (마이너스 제외)</p>
+                <p class="text-[10px] text-slate-400 font-bold italic">* 실판매 데이터 전용 (경영계획 제외)</p>
             </div>
 
             <div class="bg-white p-8 rounded-[2.5rem] card-shadow border border-slate-100 border-t-4 border-t-red-500">
@@ -76,21 +76,24 @@
                     <div id="attainment-bar" class="bg-emerald-400 h-full transition-all duration-1000" style="width: 0%"></div>
                 </div>
                 <p class="text-[10px] text-slate-300 italic">
-                    <span class="text-white font-bold underline decoration-red-500 underline-offset-4">비교 기준:</span> RS/RD는 신제품이므로, 과거의 모든 동일 사이즈 제품(R156, M729 등) 실적 합계와 비교합니다.
+                    <span class="text-white font-bold underline decoration-red-500 underline-offset-4">비교 기준:</span> 현재 실적을 과거 동일 사이즈 전체(RS/RD/R156 등)의 5년 평균 페이스와 비교합니다.
                 </p>
             </div>
         </div>
 
         <div class="bg-white rounded-[2.5rem] card-shadow border border-slate-100 overflow-hidden">
             <div class="px-8 py-6 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
-                <h3 class="font-black text-slate-800 italic">딜러별 판매추이</h3>
+                <div class="flex items-center gap-3">
+                    <h3 class="font-black text-slate-800 italic">딜러별 판매추이</h3>
+                    <span class="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[9px] font-black uppercase border border-blue-100">딜러명 클릭 시 상세</span>
+                </div>
                 <span class="text-[10px] font-bold text-slate-400 uppercase">정렬: 누적 판매량 순</span>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left whitespace-nowrap min-w-[800px]">
                     <thead>
                         <tr class="bg-white text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
-                            <th class="px-10 py-5">딜러명 (클릭 시 상세)</th>
+                            <th class="px-10 py-5">딜러명 (클릭)</th>
                             <th class="px-8 py-5 text-right">당월 판매</th>
                             <th class="px-8 py-5 text-right bg-slate-50/30 text-slate-900 font-black">2026 누계</th>
                             <th class="px-8 py-5 text-right font-black">5년 평균비</th>
@@ -111,11 +114,24 @@
 
         let rawCurrent = [], rawHistory = [], filterSize = 'ALL', filterPattern = 'ALL', currentMonthNum = 1;
 
-        // **정밀 필터링: LSR2이면서 정확한 트럭용 17.5인치 규격만 인정**
-        const normSize = (s) => String(s || '').replace(/[^0-9]/g, '');
-        const isTargetSize = (s) => {
-            const n = normSize(s);
-            return n.startsWith('20575175') || n.startsWith('21575175') || n.startsWith('22575175');
+        // **정밀 필터링 로직 업데이트**
+        const isTargetRecord = (row, h) => {
+            const mtpIdx = h.findIndex(v => v.includes('MTP분류'));
+            const deptIdx = h.findIndex(v => v.includes('이익부서'));
+            const sizeIdx = h.findIndex(v => v.includes('SIZE') || v.includes('사이즈'));
+            
+            const mtp = String(row[mtpIdx] || '').trim();
+            const dept = String(row[deptIdx] || '').trim();
+            const size = String(row[sizeIdx] || '').replace(/[^0-9]/g, '');
+
+            // 1. MTP분류: LSR2 또는 TBR T/L 17.5 포함
+            const isTargetMTP = mtp === 'LSR2' || mtp.includes('17.5');
+            // 2. 이익부서: '경영계획' 제외
+            const isNotPlan = dept !== '경영계획';
+            // 3. 규격: 정확히 17.5인치 트럭 규격 (205, 215, 225)
+            const isCorrectSize = size.startsWith('20575175') || size.startsWith('21575175') || size.startsWith('22575175');
+            
+            return isTargetMTP && isNotPlan && isCorrectSize;
         };
 
         const matchFilterSize = (s, fs) => fs === 'ALL' || String(s).includes(fs);
@@ -150,7 +166,6 @@
             const idxD = h.findIndex(v => v.includes('거래처'));
             const idxS = h.findIndex(v => v.includes('SIZE') || v.includes('사이즈'));
             const idxP = h.findIndex(v => v.includes('PTTN') || v.includes('패턴'));
-            const idxMTP = h.findIndex(v => v.includes('MTP분류'));
             
             if(type === 'current') {
                 const idxY = h.findIndex(v => v.includes('합계수량'));
@@ -159,7 +174,7 @@
                 
                 for(let i=1; i<rows.length; i++) {
                     const r = rows[i];
-                    if(!r || String(r[idxMTP]) !== 'LSR2' || !isTargetSize(r[idxS])) continue;
+                    if(!r || !isTargetRecord(r, h)) continue;
                     const yVal = Math.max(0, parseFloat(String(r[idxY]||0).replace(/,/g,'')) || 0);
                     const mVal = Math.max(0, parseFloat(String(r[idxM]||0).replace(/,/g,'')) || 0);
                     if(yVal > 0) result.push({ d: String(r[idxD]||'기타').trim(), s: r[idxS], p: r[idxP], y: yVal, m: mVal });
@@ -168,7 +183,8 @@
                 const idxA = h.findIndex(v => v.includes('5년평균'));
                 for(let i=1; i<rows.length; i++) {
                     const r = rows[i];
-                    if(!r || !isTargetSize(r[idxS])) continue;
+                    const size = String(r[idxS]||'').replace(/[^0-9]/g, '');
+                    if(!r || !(size.startsWith('20575175') || size.startsWith('21575175') || size.startsWith('22575175'))) continue;
                     result.push({ d: String(r[idxD]||'기타').trim(), s: r[idxS], p: r[idxP], a: parseFloat(r[idxA]||0) });
                 }
             }
@@ -188,7 +204,7 @@
 
         function render() {
             const cur = rawCurrent.filter(r => matchFilterSize(r.s, filterSize) && matchPattern(r.p, filterPattern));
-            const his = rawHistory.filter(r => matchFilterSize(r.s, filterSize)); // 히스토리는 패턴 상관없이 사이즈 전체 합산
+            const his = rawHistory.filter(r => matchFilterSize(r.s, filterSize)); // 사이즈 기준으로 과거 전체 실적 합산
 
             let sY = 0, sM = 0, sA = 0;
             const dMap = {};
@@ -200,11 +216,10 @@
                 dMap[r.d].details.push(r);
             });
 
-            // 히스토리 합계: 현재 필터링된 사이즈의 "모든" 과거 패턴 실적 합산
             his.forEach(r => {
                 const tA = (r.a/12)*currentMonthNum;
                 sA += tA;
-                if(dMap[r.d]) { dMap[r.d].a += tA; }
+                if(dMap[r.d]) dMap[r.d].a += tA;
             });
 
             document.getElementById('ytd-val').innerText = sY.toLocaleString();
@@ -226,7 +241,17 @@
                         <td class="px-8 py-5 text-right font-black ${dPct >= 100 ? 'text-emerald-600' : 'text-slate-500'}">${dPct}%</td>
                     </tr>
                     <tr id="${detailId}" class="hidden bg-slate-50/50">
-                        <td colspan="4" class="px-10 py-4"><div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"><table class="w-full text-xs text-left"><thead><tr class="text-slate-400 border-b border-slate-100"><th class="pb-2">규격 & 패턴</th><th class="pb-2 text-right">누적 판매</th></tr></thead><tbody class="divide-y divide-slate-50">${d.details.map(det => `<tr><td class="py-2"><strong>${det.s}</strong> <span class="text-slate-400">${det.p}</span></td><td class="py-2 text-right bstk-red font-bold">${det.y.toLocaleString()}</td></tr>`).join('')}</tbody></table></div></td></tr>`;
+                        <td colspan="4" class="px-10 py-4">
+                            <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                                <table class="w-full text-xs text-left">
+                                    <thead><tr class="text-slate-400 border-b border-slate-100"><th class="pb-2">상세 규격 & 패턴</th><th class="pb-2 text-right">누적 판매</th></tr></thead>
+                                    <tbody class="divide-y divide-slate-50">
+                                        ${d.details.map(det => `<tr><td class="py-2"><strong>${det.s}</strong> <span class="text-slate-400">${det.p}</span></td><td class="py-2 text-right bstk-red font-bold">${det.y.toLocaleString()}</td></tr>`).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </td>
+                    </tr>`;
             });
         }
         window.onload = init;
