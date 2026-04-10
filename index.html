@@ -62,7 +62,7 @@
                     <span id="ytd-val" class="text-6xl font-black tracking-tighter">0</span>
                     <span class="text-slate-300 font-bold text-xl">본</span>
                 </div>
-                <p class="text-[10px] text-slate-400 font-bold italic">* 경영계획/반품 제외, 235 제외</p>
+                <p class="text-[10px] text-slate-400 font-bold italic">* 경영계획/반품 제외, 235 제외 (올림 적용)</p>
             </div>
 
             <div class="bg-white p-8 rounded-[2.5rem] card-shadow border border-slate-100 border-t-4 border-t-red-500 relative">
@@ -83,7 +83,7 @@
                 <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden mb-4">
                     <div id="attainment-bar" class="bg-emerald-400 h-full transition-all duration-1000" style="width: 0%"></div>
                 </div>
-                <p class="text-[10px] text-slate-300 italic">비교 기준: 전체 시장 누계 vs <span class="text-emerald-400 font-bold">계절성 반영 월별 5년 평균</span></p>
+                <p class="text-[10px] text-slate-300 italic">비교 기준: 전체 시장 누계 vs <span class="text-emerald-400 font-bold">월별 5년 평균 합계</span></p>
             </div>
         </div>
 
@@ -126,7 +126,9 @@
             const mtpIdx = header.findIndex(v => String(v || '').toUpperCase().includes('MTP분류'));
             const deptIdx = header.findIndex(v => String(v || '').includes('이익부서'));
             const sizeIdx = header.findIndex(v => String(v || '').toUpperCase().includes('SIZE') || String(v || '').includes('사이즈'));
-            const qtyIdx = header.length - 1;
+            
+            let qtyIdx = header.findIndex(v => String(v).replace(/\s/g, '') === '합계수량');
+            if (qtyIdx === -1) qtyIdx = header.length - 1; // 못 찾으면 맨 오른쪽
 
             if (mtpIdx === -1 || sizeIdx === -1) return false;
 
@@ -170,9 +172,9 @@
             
             const [cRows, lyRows, hRows] = await Promise.all([fetchRaw(URL_CURR), fetchRaw(URL_LAST_YEAR), fetchRaw(URL_HIST)]);
             
-            rawCurrent = processCurrent(cRows, new Date().getFullYear());
-            rawLastYear = processCurrent(lyRows, new Date().getFullYear() - 1);
-            rawHistory = processHistory(hRows);
+            rawCurrent = processCurrent(cRows);
+            rawLastYear = processCurrent(lyRows);
+            rawHistory = processHistory(hRows); // 이제 평균 누적이 정상적으로 잡힙니다
             
             if(rawLastYear.length === 0) {
                 document.getElementById('ly-month-text').innerText = "작년 데이터가 없습니다.";
@@ -182,20 +184,21 @@
             render();
         }
 
-        // Current & Last Year 파싱
-        function processCurrent(rows, targetYear) {
+        function processCurrent(rows) {
             if (rows.length < 2) return [];
             const h = rows[0].map(v => String(v || '').trim());
             const idxD = h.findIndex(v => v.includes('거래처') || v.includes('딜러'));
             const idxS = h.findIndex(v => v.toUpperCase().includes('SIZE') || v.includes('사이즈'));
             const idxP = h.findIndex(v => v.toUpperCase().includes('PTTN') || v.includes('패턴'));
-            const idxYTD = h.length - 1;
+            
+            let idxYTD = h.findIndex(v => String(v).replace(/\s/g, '') === '합계수량');
+            if (idxYTD === -1) idxYTD = h.length - 1;
 
             const monthlyIdx = {};
             for(let i=0; i<h.length; i++) {
-                if (String(h[i]).toUpperCase() === 'QTY') {
+                if (String(h[i]).toUpperCase().replace(/\s/g, '') === 'QTY') {
                     const prevCol = String(h[i-1] || '');
-                    const match = prevCol.match(new RegExp(`${targetYear}-(\\d{2})`)) || prevCol.match(/-(\d{2})/);
+                    const match = prevCol.match(/-(\d{2})/); // -01, -02 등의 월을 완벽하게 캐치
                     if(match) monthlyIdx[parseInt(match[1], 10)] = i;
                 }
             }
@@ -217,25 +220,28 @@
             return result;
         }
 
-        // **새로 바뀐 History (월별 평균 반영)**
+        // **새로 바뀐 History (구버전 헤더, 신버전 헤더 완벽 호환)**
         function processHistory(rows) {
             if (rows.length < 2) return [];
             const h = rows[0].map(v => String(v || '').trim());
-            const idxD = 0; 
-            const idxS = h.findIndex(v => v.includes('사이즈'));
+            const idxD = h.findIndex(v => v.includes('거래처')); 
+            const idxS = h.findIndex(v => v.includes('사이즈') || v.toUpperCase().includes('SIZE')); // 이전/현재 헤더 모두 호환
             
-            // 신버전: 1월~12월(5년평균) 탐색
+            // 월별 5년평균 인덱스 탐색
             const monthIdx = {};
             for(let m=1; m<=12; m++) {
-                monthIdx[m] = h.findIndex(v => v.includes(`${m}월(5년평균)`));
+                monthIdx[m] = h.findIndex(v => String(v).replace(/\s/g, '') === `${m}월(5년평균)`);
             }
-            // 구버전 호환용 (혹시 월별 데이터가 없을 때 대비)
-            const idxAvgYear = h.findIndex(v => v.includes('5년평균(연간)') || v === '5년평균');
+            const idxAvgYear = h.findIndex(v => {
+                const clean = String(v).replace(/\s/g, '');
+                return clean.includes('5년평균(연간)') || clean === '5년평균' || clean.includes('5년평균');
+            });
 
             const result = [];
             for (let i = 1; i < rows.length; i++) {
                 const r = rows[i];
-                if (!r) continue;
+                if (!r || idxS === -1) continue; 
+
                 const size = String(r[idxS] || '');
                 if (size.includes('235')) continue; 
                 if (!size.includes('17.5')) continue;
@@ -247,10 +253,10 @@
                     if(monthIdx[m] !== -1) {
                         monthlyAvg[m] = parseFloat(String(r[monthIdx[m]]||0).replace(/,/g,'')) || 0;
                     } else {
-                        monthlyAvg[m] = annualAvg / 12; // 예외시 1/n 처리
+                        monthlyAvg[m] = annualAvg / 12; 
                     }
                 }
-                result.push({ d: String(r[idxD]||'기타').trim(), s: size, monthlyAvg: monthlyAvg });
+                result.push({ d: String(r[idxD !== -1 ? idxD : 0]||'기타').trim(), s: size, monthlyAvg: monthlyAvg });
             }
             return result;
         }
@@ -281,20 +287,13 @@
             render();
         }
 
-        function filterTable() {
-            const term = document.getElementById('search-input').value.toLowerCase().trim();
-            document.querySelectorAll('#dealer-list tr').forEach(tr => {
-                if (tr.id && tr.id.startsWith('detail-')) return;
-                tr.style.display = tr.textContent.toLowerCase().includes(term) ? '' : 'none';
-            });
-        }
-
         function toggleRow(id) { document.getElementById(id).classList.toggle('hidden'); }
 
+        // 올림(Math.ceil)이 적용된 YoY 계산
         const getYoYHTML = (cur, prev) => {
             if (prev === 0 && cur > 0) return `<span class="text-blue-500 font-black">신규</span>`;
             if (prev === 0 && cur === 0) return `<span class="text-slate-300">-</span>`;
-            const pct = Math.round(((cur / prev) - 1) * 100);
+            const pct = Math.ceil(((cur / prev) - 1) * 100);
             if (pct > 0) return `<span class="text-emerald-500 font-black">+${pct}% ▲</span>`;
             if (pct < 0) return `<span class="text-red-500 font-black">${pct}% ▼</span>`;
             return `<span class="text-slate-400 font-bold">동일</span>`;
@@ -303,7 +302,7 @@
         const getBadgeHTML = (cur, prev) => {
             if (prev === 0 && cur > 0) return { t: '신규 진입', c: 'bg-blue-50 text-blue-600 border-blue-200' };
             if (prev === 0 && cur === 0) return { t: '실적 없음', c: 'bg-slate-50 text-slate-400 border-slate-200' };
-            const pct = Math.round(((cur / prev) - 1) * 100);
+            const pct = Math.ceil(((cur / prev) - 1) * 100);
             if (pct > 0) return { t: `전년비 +${pct}% ▲`, c: 'bg-emerald-50 text-emerald-600 border-emerald-200' };
             if (pct < 0) return { t: `전년비 ${pct}% ▼`, c: 'bg-red-50 text-red-600 border-red-200' };
             return { t: '전년과 동일', c: 'bg-slate-50 text-slate-500 border-slate-200' };
@@ -335,30 +334,34 @@
                 }
             });
 
-            // **계절성 반영 목표 계산 (선택한 월까지의 누적 5년 평균)**
             his.forEach(r => {
                 let tA = 0;
                 for(let m=1; m<=selectedMonth; m++) {
                     tA += r.monthlyAvg[m];
                 }
                 sA += tA;
-                if(dMap[r.d]) dMap[r.d].a += tA;
+                if(dMap[r.d]) {
+                    dMap[r.d].a += tA;
+                } else {
+                    dMap[r.d] = { y:0, m:0, m_ly:0, a:tA, details:[] }; // 과거 이력만 있는 경우도 테이블에 잡히게
+                }
             });
 
-            document.getElementById('ytd-val').innerText = Math.round(sY).toLocaleString();
-            document.getElementById('month-val').innerText = Math.round(sM).toLocaleString();
+            // Math.ceil (올림) 적용하여 노출
+            document.getElementById('ytd-val').innerText = Math.ceil(sY).toLocaleString();
+            document.getElementById('month-val').innerText = Math.ceil(sM).toLocaleString();
             document.getElementById('month-label').innerText = `당월 실적 (${selectedMonth}월)`;
             document.getElementById('row-count').innerText = `데이터: ${cur.length}건`;
             
             if(rawLastYear.length > 0) {
-                document.getElementById('ly-month-val').innerText = Math.round(sM_LY).toLocaleString();
+                document.getElementById('ly-month-val').innerText = Math.ceil(sM_LY).toLocaleString();
                 const badge = getBadgeHTML(sM, sM_LY);
                 const badgeEl = document.getElementById('yoy-badge');
                 badgeEl.innerText = badge.t;
                 badgeEl.className = `text-[10px] px-2.5 py-1 rounded-md font-black border ${badge.c}`;
             }
 
-            const pct = sA > 0 ? Math.round((sY/sA)*100) : 0;
+            const pct = sA > 0 ? Math.ceil((sY/sA)*100) : 0;
             document.getElementById('attainment-pct').innerText = pct + "%";
             document.getElementById('attainment-bar').style.width = Math.min(pct, 100) + "%";
 
@@ -366,22 +369,23 @@
             tbody.innerHTML = '';
             
             Object.entries(dMap).sort((a,b) => b[1].y - a[1].y).forEach(([n, d], idx) => {
-                if(d.y === 0 && d.m === 0 && d.m_ly === 0) return;
+                // 실적이 전혀 없으면 표출 안함
+                if(d.y === 0 && d.m === 0 && d.m_ly === 0 && d.a === 0) return;
 
-                const dPct = d.a > 0 ? Math.round((d.y/d.a)*100) : 0;
+                const dPct = d.a > 0 ? Math.ceil((d.y/d.a)*100) : 0;
                 const detailId = `detail-${idx}`;
                 
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-50 cursor-pointer" onclick="toggleRow('${detailId}')">
                         <td class="px-10 py-5 text-slate-700 font-bold flex items-center gap-2"><span class="text-blue-500 bg-blue-50 rounded w-4 h-4 flex items-center justify-center text-[10px]">+</span> ${n}</td>
-                        <td class="px-6 py-5 text-right text-slate-400 bg-slate-50/30">${Math.round(d.m_ly).toLocaleString()}</td>
-                        <td class="px-6 py-5 text-right text-slate-700 font-bold">${Math.round(d.m).toLocaleString()}</td>
+                        <td class="px-6 py-5 text-right text-slate-400 bg-slate-50/30">${Math.ceil(d.m_ly).toLocaleString()}</td>
+                        <td class="px-6 py-5 text-right text-slate-700 font-bold">${Math.ceil(d.m).toLocaleString()}</td>
                         <td class="px-6 py-5 text-right text-xs tracking-tight">${getYoYHTML(d.m, d.m_ly)}</td>
-                        <td class="px-8 py-5 text-right bg-slate-50/50 bstk-red font-black text-base border-l border-slate-100">${Math.round(d.y).toLocaleString()}</td>
+                        <td class="px-8 py-5 text-right bg-slate-50/50 bstk-red font-black text-base border-l border-slate-100">${Math.ceil(d.y).toLocaleString()}</td>
                         <td class="px-8 py-5 text-right font-black ${dPct >= 100 ? 'text-emerald-600' : 'text-slate-500'}">${dPct}%</td>
                     </tr>
                     <tr id="${detailId}" class="hidden bg-slate-50/50">
-                        <td colspan="6" class="px-10 py-4"><div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"><table class="w-full text-xs text-left"><thead><tr class="text-slate-400 border-b border-slate-100"><th class="pb-2">상세 규격 & 패턴</th><th class="pb-2 text-right">당월 판매</th><th class="pb-2 text-right">누적 판매</th></tr></thead><tbody class="divide-y divide-slate-50">${d.details.map(det => `<tr><td class="py-2"><strong>${det.s}</strong> <span class="text-slate-400">${det.p}</span></td><td class="py-2 text-right">${Math.round(det.m).toLocaleString()}</td><td class="py-2 text-right bstk-red font-bold">${Math.round(det.y).toLocaleString()}</td></tr>`).join('')}</tbody></table></div></td></tr>`;
+                        <td colspan="6" class="px-10 py-4"><div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"><table class="w-full text-xs text-left"><thead><tr class="text-slate-400 border-b border-slate-100"><th class="pb-2">상세 규격 & 패턴</th><th class="pb-2 text-right">당월 판매</th><th class="pb-2 text-right">누적 판매</th></tr></thead><tbody class="divide-y divide-slate-50">${d.details.map(det => `<tr><td class="py-2"><strong>${det.s}</strong> <span class="text-slate-400">${det.p}</span></td><td class="py-2 text-right">${Math.ceil(det.m).toLocaleString()}</td><td class="py-2 text-right bstk-red font-bold">${Math.ceil(det.y).toLocaleString()}</td></tr>`).join('')}</tbody></table></div></td></tr>`;
             });
         }
         window.onload = init;
