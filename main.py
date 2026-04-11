@@ -11,8 +11,8 @@ from webdriver_manager.chrome import ChromeDriverManager
 USER_ID = os.environ.get('WOS_ID')
 USER_PW = os.environ.get('WOS_PW')
 
-# 2. 경로 설정
-current_dir = os.getcwd()
+# 2. 경로 설정 (절대 경로 사용으로 안정성 확보)
+current_dir = os.path.abspath(os.getcwd())
 temp_download_dir = os.path.join(current_dir, 'temp_downloads')
 
 if os.path.exists(temp_download_dir):
@@ -29,6 +29,7 @@ options.add_argument('--ignore-certificate-errors')
 options.add_experimental_option("prefs", {
     "download.default_directory": temp_download_dir,
     "download.prompt_for_download": False,
+    "download.directory_upgrade": True,
     "safebrowsing.enabled": False,
     "profile.default_content_setting_values.automatic_downloads": 1
 })
@@ -37,7 +38,7 @@ driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), opti
 
 try:
     # 4. 로그인
-    print("WOS 접속 중...")
+    print("🚀 WOS 접속 및 로그인 시작...")
     driver.get('http://wos.bridgestone-korea.co.kr/')
     time.sleep(5)
     driver.find_element(By.ID, 'userID').send_keys(USER_ID)
@@ -46,51 +47,62 @@ try:
     time.sleep(10) 
 
     # 5. 매출현황 이동
+    print("📂 매출현황 페이지 이동 중...")
     driver.get('http://wos.bridgestone-korea.co.kr/inqireMgmt/selngLedgrInqire2.do')
     time.sleep(10)
 
     # 6. 날짜 조회
+    print("🔍 데이터 조회 버튼 클릭 (2026-01-01 기준)...")
     s_date_input = driver.find_element(By.ID, 'sDate')
     driver.execute_script("arguments[0].value = '2026-01-01';", s_date_input)
     driver.find_element(By.CLASS_NAME, 'search_btn').click()
-    print("데이터 조회 중...")
-    time.sleep(20) 
+    time.sleep(25) # 데이터 로딩 대기 시간 증가
 
-    # 7. 엑셀 다운로드
+    # 7. 엑셀 다운로드 클릭
+    print("📥 엑셀 다운로드 버튼 클릭 시도...")
     excel_btn = driver.find_element(By.CLASS_NAME, 'excel_btn')
     driver.execute_script("arguments[0].click();", excel_btn)
     
-    # 8. 다운로드 대기 및 진짜 파일 찾기
-    print("파일 다운로드 확인 중...")
+    # 8. 파일 생성 확인 (더 정밀한 체크)
+    print("⏳ 파일 생성 대기 중 (최대 100초)...")
     latest_file = None
-    for _ in range(30):
-        # 💡 중요: .crdownload(다운로드중) 이거나 . (숨김임시파일) 로 시작하는 파일은 제외
+    for i in range(50): # 2초씩 50번 = 100초 대기
         files = [f for f in os.listdir(temp_download_dir) 
                  if not f.endswith('.crdownload') and not f.startswith('.')]
+        
         if files:
             files.sort(key=lambda x: os.path.getmtime(os.path.join(temp_download_dir, x)))
             latest_file = files[-1]
+            print(f"✅ 파일 발견: {latest_file}")
             break
+        
+        if i % 5 == 0:
+            print(f"... 아직 대기 중 ({i*2}초 경과)")
         time.sleep(2)
 
-    # 9. 파일 변환
+    # 9. 파일 변환 및 저장
     if latest_file:
         source_path = os.path.join(temp_download_dir, latest_file)
         target_path = os.path.join(current_dir, "current_sales.xlsx")
         
-        print(f"변환 시작: {latest_file} -> current_sales.xlsx")
+        print(f"📊 엑셀 변환 중: {latest_file} -> current_sales.xlsx")
         try:
-            # 💡 html5lib을 사용하여 HTML 표를 읽음
+            # 💡 WOS의 HTML 형식을 읽어 진짜 엑셀로 변환
             df_list = pd.read_html(source_path, flavor='html5lib')
             if df_list:
                 df = df_list[0]
                 df.to_excel(target_path, index=False)
-                print(f"✅ 변환 성공!")
+                print(f"🎉 모든 작업이 성공적으로 완료되었습니다!")
         except Exception as e:
-            print(f"⚠️ 변환 실패, 원본 유지 시도: {e}")
-            shutil.move(source_path, target_path)
+            print(f"⚠️ 변환 실패로 인해 원본 파일을 강제 복사합니다: {e}")
+            shutil.copy2(source_path, target_path)
     else:
-        raise Exception("❌ 다운로드된 파일을 찾지 못했습니다.")
+        # 실패 시 폴더에 있는 모든 것을 출력해서 원인 파악
+        print(f"❌ 현재 폴더 내용물: {os.listdir(temp_download_dir)}")
+        raise Exception("다운로드된 파일을 찾지 못했습니다. 버튼 클릭이 안 되었거나 다운로드에 실패했습니다.")
 
+except Exception as e:
+    print(f"❌ 에러 발생: {e}")
+    exit(1)
 finally:
     driver.quit()
