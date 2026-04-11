@@ -2,7 +2,11 @@ name: Dashboard Data Auto Update
 
 on:
   schedule:
-    - cron: '0 0 * * *' # 한국 시간 오전 9시
+    # 한국 시간 기준 월~금 오전 9시, 오후 2시, 오후 5시 실행
+    # 09:00 KST = 00:00 UTC
+    # 14:00 KST = 05:00 UTC
+    # 17:00 KST = 08:00 UTC
+    - cron: '0 0,5,8 * * 1-5'
   workflow_dispatch: 
 
 permissions:
