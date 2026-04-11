@@ -230,8 +230,8 @@
         const REPO_NAME = "Dashboard";
         const t = new Date().getTime();
         
-        // 💡 중요: 깃허브 확장자에 맞게 xlsx로 수정
-        const URL_CURR = `https://raw.githubusercontent.com/${GITHUB_USER}/${REPO_NAME}/main/current_sales.xls?t=${t}`;
+        // 💡 중요: 봇이 변환해준 진짜 엑셀 파일(.xlsx)로 연결합니다.
+        const URL_CURR = `https://raw.githubusercontent.com/${GITHUB_USER}/${REPO_NAME}/main/current_sales.xlsx?t=${t}`;
         const URL_LAST_YEAR = `https://raw.githubusercontent.com/${GITHUB_USER}/${REPO_NAME}/main/last_year_sales.xls?t=${t}`;
         const URL_HIST = `https://raw.githubusercontent.com/${GITHUB_USER}/${REPO_NAME}/main/historical_data.xlsx?t=${t}`;
 
@@ -505,7 +505,7 @@
             document.getElementById('ytd-val').innerText = Math.ceil(sY).toLocaleString();
             document.getElementById('month-val').innerText = Math.ceil(sM).toLocaleString();
             document.getElementById('month-label').innerText = `당월 실적 (${selectedMonth}월)`;
-            document.getElementById('row-count').innerText = `데이터: ${cur.length}건`;
+            document.getElementById('row-count').innerText = `데이터 처리 완료`;
             if(rawLastYear.length > 0) {
                 document.getElementById('ly-month-val').innerText = Math.ceil(sM_LY).toLocaleString();
                 const bMth = getBadgeHTML(sM, sM_LY);
