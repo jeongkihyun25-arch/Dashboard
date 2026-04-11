@@ -22,14 +22,10 @@
         .filter-btn:active { transform: scale(0.95); }
         .filter-active { background-color: #0f172a; color: white; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2); }
         .filter-inactive { background-color: white; color: #64748b; border: 1px solid #e2e8f0; }
-        @media (hover: hover) {
-            .filter-inactive:hover { border-color: #cbd5e1; color: #334155; background-color: #f8fafc; }
-        }
         
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         
         .table-scroll { -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
         
@@ -41,9 +37,6 @@
         }
         
         th.sortable { cursor: pointer; transition: background-color 0.2s; user-select: none; }
-        @media (hover: hover) {
-            th.sortable:hover { background-color: rgba(226, 232, 240, 0.5); }
-        }
     </style>
 </head>
 <body class="text-slate-800 antialiased overflow-x-hidden selection:bg-red-100 selection:text-red-900">
@@ -103,7 +96,7 @@
                         <span class="text-slate-400 font-bold text-xs md:text-base">본</span>
                     </div>
                 </div>
-                <p id="ly-ytd-text" class="text-[8px] md:text-[10px] text-slate-500 font-medium relative z-10 bg-slate-100/80 inline-block px-1.5 md:px-2 py-0.5 rounded self-start tracking-tighter">작년 동기: <span id="ly-ytd-val" class="font-bold text-slate-700">0</span></p>
+                <p id="ly-ytd-text" class="text-[8px] md:text-[10px] text-slate-500 font-medium relative z-10 bg-slate-100/80 inline-block px-1.5 md:px-2 py-0.5 rounded self-start tracking-tighter">작년 동기(누적): <span id="ly-ytd-val" class="font-bold text-slate-700">0</span>본</p>
             </div>
 
             <div class="col-span-1 bg-gradient-to-br from-white to-red-50/30 p-4 md:p-6 rounded-[1.2rem] md:rounded-[2rem] card-shadow border border-red-100/50 relative overflow-hidden group flex flex-col justify-between">
@@ -121,7 +114,7 @@
                         <span class="text-red-300 font-bold text-xs md:text-base">본</span>
                     </div>
                 </div>
-                <p id="ly-month-text" class="text-[8px] md:text-[10px] text-slate-500 font-medium relative z-10 bg-white/60 inline-block px-1.5 md:px-2 py-0.5 rounded self-start tracking-tighter">작년 당월: <span id="ly-month-val" class="font-bold text-slate-700">0</span></p>
+                <p id="ly-month-text" class="text-[8px] md:text-[10px] text-slate-500 font-medium relative z-10 bg-white/60 inline-block px-1.5 md:px-2 py-0.5 rounded self-start tracking-tighter">작년 당월(1달): <span id="ly-month-val" class="font-bold text-slate-700">0</span>본</p>
             </div>
 
             <div class="col-span-1 bg-gradient-to-br from-slate-800 to-slate-700 p-4 md:p-6 rounded-[1.2rem] md:rounded-[2rem] card-shadow text-white relative overflow-hidden flex flex-col justify-between">
@@ -175,53 +168,33 @@
             </div>
             
             <div class="overflow-x-auto pb-4 md:pb-10 table-scroll relative">
-                <table class="w-full text-left whitespace-nowrap min-w-[650px] md:min-w-[1100px]">
+                <table class="w-full text-left whitespace-nowrap min-w-[600px] md:min-w-[1100px]">
                     <thead>
                         <tr class="bg-slate-50/80 text-[9px] md:text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-slate-200">
-                            <th class="px-3 md:px-8 py-3 md:py-4 sticky left-0 top-0 bg-slate-50 z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)] border-r border-slate-100 w-[110px] md:w-[200px]">
-                                딜러명
-                            </th>
-                            
-                            <th class="sortable px-2 md:px-5 py-3 md:py-4 text-right group relative" onclick="setSort('ly')" ontouchstart="showTooltip(this, 'center')" ontouchend="hideTooltip(this)">
+                            <th class="px-3 md:px-10 py-3 md:py-4 sticky left-0 top-0 bg-slate-50 z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)] border-r border-slate-100 w-[110px] md:w-[220px]">딜러명 (클릭)</th>
+                            <th class="sortable px-3 md:px-6 py-3 md:py-4 text-right group relative" onclick="setSort('ly')" ontouchstart="showTooltip(this, 'center')" ontouchend="hideTooltip(this)">
                                 전년 동월 <span id="sort-icon-ly" class="inline-block w-2 md:w-3 text-center"></span>
-                                <div class="tooltip-text opacity-0 pointer-events-none transform translate-y-1 -translate-x-1/2 absolute top-full left-1/2 mt-1 w-[100px] bg-slate-800 text-white text-[9px] rounded-lg py-1.5 px-1.5 text-center shadow-lg z-40">
-                                    작년 같은 달(1개월) 판매량
-                                </div>
+                                <div class="tooltip-text opacity-0 pointer-events-none transform translate-y-1 -translate-x-1/2 absolute top-full left-1/2 mt-1 w-[110px] bg-slate-800 text-white text-[9px] rounded-lg py-1.5 px-1.5 text-center shadow-lg z-40">작년 같은 달(1개월)<br>순수 판매량</div>
                             </th>
-                            
-                            <th class="sortable px-2 md:px-5 py-3 md:py-4 text-right group relative" onclick="setSort('cm')" ontouchstart="showTooltip(this, 'center')" ontouchend="hideTooltip(this)">
+                            <th class="sortable px-3 md:px-6 py-3 md:py-4 text-right group relative" onclick="setSort('cm')" ontouchstart="showTooltip(this, 'center')" ontouchend="hideTooltip(this)">
                                 당월 판매 <span id="sort-icon-cm" class="inline-block w-2 md:w-3 text-center"></span>
-                                <div class="tooltip-text opacity-0 pointer-events-none transform translate-y-1 -translate-x-1/2 absolute top-full left-1/2 mt-1 w-[100px] bg-slate-800 text-white text-[9px] rounded-lg py-1.5 px-1.5 text-center shadow-lg z-40">
-                                    올해 선택 달(1개월) 판매량
-                                </div>
+                                <div class="tooltip-text opacity-0 pointer-events-none transform translate-y-1 -translate-x-1/2 absolute top-full left-1/2 mt-1 w-[110px] bg-slate-800 text-white text-[9px] rounded-lg py-1.5 px-1.5 text-center shadow-lg z-40">올해 선택 달(1개월)<br>순수 판매량</div>
                             </th>
-                            
-                            <th class="sortable px-2 md:px-5 py-3 md:py-4 text-right group relative" onclick="setSort('yoy')" ontouchstart="showTooltip(this, 'center')" ontouchend="hideTooltip(this)">
+                            <th class="sortable px-3 md:px-6 py-3 md:py-4 text-right group relative" onclick="setSort('yoy')" ontouchstart="showTooltip(this, 'center')" ontouchend="hideTooltip(this)">
                                 전년비 <span id="sort-icon-yoy" class="inline-block w-2 md:w-3 text-center"></span>
-                                <div class="tooltip-text opacity-0 pointer-events-none transform translate-y-1 -translate-x-1/2 absolute top-full left-1/2 mt-1 w-[110px] bg-slate-800 text-white text-[9px] rounded-lg py-1.5 px-1.5 text-center shadow-lg z-40">
-                                    당월 판매 작년비 성장률(YoY)
-                                </div>
+                                <div class="tooltip-text opacity-0 pointer-events-none transform translate-y-1 -translate-x-1/2 absolute top-full left-1/2 mt-1 w-[130px] bg-slate-800 text-white text-[9px] rounded-lg py-1.5 px-1.5 text-center shadow-lg z-40">당월 판매량이 작년 대비<br>얼마나 성장했는지 표시</div>
                             </th>
-                            
-                            <th class="sortable px-4 md:px-6 py-3 md:py-4 text-right bg-red-50/50 text-red-900 border-l border-slate-200 group relative" onclick="setSort('ytd')" ontouchstart="showTooltip(this, 'center')" ontouchend="hideTooltip(this)">
+                            <th class="sortable px-4 md:px-8 py-3 md:py-4 text-right bg-red-50/50 text-red-900 border-l border-slate-200 group relative" onclick="setSort('ytd')" ontouchstart="showTooltip(this, 'center')" ontouchend="hideTooltip(this)">
                                 올해 누계(YTD) <span id="sort-icon-ytd" class="inline-block w-2 md:w-3 text-center">▼</span>
-                                <div class="tooltip-text opacity-0 pointer-events-none transform translate-y-1 -translate-x-1/2 absolute top-full left-1/2 mt-1 w-[140px] bg-slate-800 text-white text-[9px] rounded-lg py-1.5 px-1.5 text-center shadow-lg z-40">
-                                    올해 누적 판매량<br><span class="text-red-300 font-normal">*( )는 작년 동기비 성장률</span>
-                                </div>
+                                <div class="tooltip-text opacity-0 pointer-events-none transform translate-y-1 -translate-x-1/2 absolute top-full left-1/2 mt-1 w-[160px] bg-slate-800 text-white text-[9px] rounded-lg py-1.5 px-2 text-center shadow-lg z-40">올해 1월부터의 누적 판매량<br><span class="text-red-300 font-normal">*( )는 작년 동기간 대비 성장률</span></div>
                             </th>
-
-                            <th class="sortable px-4 md:px-6 py-3 md:py-4 text-right group relative" onclick="setSort('atot')" ontouchstart="showTooltip(this, 'left')" ontouchend="hideTooltip(this)">
+                            <th class="sortable px-4 md:px-8 py-3 md:py-4 text-right group relative" onclick="setSort('atot')" ontouchstart="showTooltip(this, 'left')" ontouchend="hideTooltip(this)">
                                 5년 평균<br>1년수량 <span id="sort-icon-atot" class="inline-block w-2 md:w-3 text-center"></span>
-                                <div class="tooltip-text align-left opacity-0 pointer-events-none transform translate-y-1 absolute top-full left-1/2 mt-1 w-[140px] bg-slate-800 text-white text-[9px] rounded-lg py-1.5 px-2 text-center shadow-lg z-40">
-                                    과거 5년 동안의<br><span class="text-indigo-300">1년(12개월) 전체 평균량</span><br>및 올해 누계 달성률(%)
-                                </div>
+                                <div class="tooltip-text align-left opacity-0 pointer-events-none transform translate-y-1 absolute top-full left-1/2 mt-1 w-[160px] bg-slate-800 text-white text-[9px] rounded-lg py-1.5 px-2 text-center shadow-lg z-40">과거 5년 동안의<br><span class="text-emerald-300">평균 누적 판매량</span> 대비<br>현재 누계 실적 도달률</div>
                             </th>
-                            
-                            <th class="sortable px-4 md:px-6 py-3 md:py-4 text-right group relative" onclick="setSort('aytd')" ontouchstart="showTooltip(this, 'right')" ontouchend="hideTooltip(this)">
+                            <th class="sortable px-4 md:px-8 py-3 md:py-4 text-right group relative" onclick="setSort('aytd')" ontouchstart="showTooltip(this, 'right')" ontouchend="hideTooltip(this)">
                                 5년 평균<br>당월까지 누적 <span id="sort-icon-aytd" class="inline-block w-2 md:w-3 text-center"></span>
-                                <div class="tooltip-text align-right opacity-0 pointer-events-none transform translate-y-1 absolute top-full right-0 mt-1 w-[150px] bg-slate-800 text-white text-[9px] rounded-lg py-1.5 px-2 text-center shadow-lg z-40">
-                                    과거 5년 <span class="text-emerald-300">동기간 누적 평균량</span><br>대비 현재 누계 실적 도달률
-                                </div>
+                                <div class="tooltip-text align-right opacity-0 pointer-events-none transform translate-y-1 absolute top-full right-0 mt-1 w-[160px] bg-slate-800 text-white text-[9px] rounded-lg py-1.5 px-2 text-center shadow-lg z-40">과거 5년 <span class="text-emerald-300">동기간 누적 평균량</span><br>대비 현재 누계 실적 도달률</div>
                             </th>
                         </tr>
                     </thead>
@@ -236,13 +209,9 @@
             const tooltip = el.querySelector('.tooltip-text');
             if(tooltip) { 
                 tooltip.style.opacity = '1'; 
-                if(align === 'right') {
-                    tooltip.style.transform = 'translateY(0) translateX(0)'; 
-                } else if (align === 'left') {
-                    tooltip.style.transform = 'translateY(0) translateX(-80%)'; 
-                } else {
-                    tooltip.style.transform = 'translateY(0) translateX(-50%)'; 
-                }
+                if(align === 'right') tooltip.style.transform = 'translateY(0) translateX(0)'; 
+                else if (align === 'left') tooltip.style.transform = 'translateY(0) translateX(-80%)'; 
+                else tooltip.style.transform = 'translateY(0) translateX(-50%)'; 
             }
         }
         function hideTooltip(el) {
@@ -250,13 +219,9 @@
             if(tooltip) { 
                 setTimeout(() => { 
                     tooltip.style.opacity = '0'; 
-                    if(tooltip.classList.contains('align-right')) {
-                        tooltip.style.transform = 'translateY(4px) translateX(0)'; 
-                    } else if(tooltip.classList.contains('align-left')) {
-                        tooltip.style.transform = 'translateY(4px) translateX(-80%)'; 
-                    } else {
-                        tooltip.style.transform = 'translateY(4px) translateX(-50%)'; 
-                    }
+                    if(tooltip.classList.contains('align-right')) tooltip.style.transform = 'translateY(4px) translateX(0)'; 
+                    else if(tooltip.classList.contains('align-left')) tooltip.style.transform = 'translateY(4px) translateX(-80%)'; 
+                    else tooltip.style.transform = 'translateY(4px) translateX(-50%)'; 
                 }, 1500); 
             }
         }
@@ -265,7 +230,7 @@
         const REPO_NAME = "Dashboard";
         const t = new Date().getTime();
         
-        // .xlsx 확장자로 수정 완료 및 캐시 방지 파라미터 유지
+        // 💡 중요: 깃허브 확장자에 맞게 xlsx로 수정
         const URL_CURR = `https://raw.githubusercontent.com/${GITHUB_USER}/${REPO_NAME}/main/current_sales.xlsx?t=${t}`;
         const URL_LAST_YEAR = `https://raw.githubusercontent.com/${GITHUB_USER}/${REPO_NAME}/main/last_year_sales.xls?t=${t}`;
         const URL_HIST = `https://raw.githubusercontent.com/${GITHUB_USER}/${REPO_NAME}/main/historical_data.xlsx?t=${t}`;
@@ -304,10 +269,8 @@
             if (qty <= 0) return false; 
             if (dept.includes('경영계획')) return false; 
 
-            const isLSR2 = mtp === 'LSR2';
-            const is17_5 = mtp.includes('17.5') && (mtp.includes('DOWN') || mtp.includes('T/L') || mtp.includes('TBR'));
-
-            return isLSR2 || is17_5;
+            const isLSR2 = mtp === 'LSR2' || (mtp.includes('17.5') && (mtp.includes('DOWN') || mtp.includes('T/L') || mtp.includes('TBR')));
+            return isLSR2;
         };
 
         const matchFilterSize = (s, fs) => fs === 'ALL' || String(s).includes(fs);
@@ -335,16 +298,9 @@
                 
                 const [cRows, lyRows, hRows] = await Promise.all([fetchRaw(URL_CURR), fetchRaw(URL_LAST_YEAR), fetchRaw(URL_HIST)]);
                 
-                rawCurrent = processCurrent(cRows, new Date().getFullYear());
-                rawLastYear = processCurrent(lyRows, new Date().getFullYear() - 1);
+                rawCurrent = processCurrent(cRows, 2026);
+                rawLastYear = processCurrent(lyRows, 2025);
                 rawHistory = processHistory(hRows); 
-                
-                if(rawLastYear.length === 0) {
-                    const lyText = document.getElementById('ly-month-text');
-                    const lyYtdText = document.getElementById('ly-ytd-text');
-                    if(lyText) lyText.innerText = "작년 데이터 없음";
-                    if(lyYtdText) lyYtdText.innerText = "작년 데이터 없음";
-                }
 
                 const dealerSet = new Set();
                 [...rawCurrent, ...rawLastYear, ...rawHistory].forEach(r => { if (r && r.d) dealerSet.add(r.d); });
@@ -355,12 +311,6 @@
                 render();
             } catch (e) {
                 console.error(e);
-                const rc = document.getElementById('row-count');
-                if(rc) {
-                    rc.innerText = "❌ 에러: " + e.message;
-                    rc.classList.replace('text-slate-500', 'text-red-600');
-                    rc.classList.replace('bg-slate-100', 'bg-red-50');
-                }
             }
         }
 
@@ -370,7 +320,6 @@
             const idxD = h.findIndex(v => v.includes('거래처') || v.includes('딜러'));
             const idxS = h.findIndex(v => v.toUpperCase().includes('SIZE') || v.includes('사이즈'));
             const idxP = h.findIndex(v => v.toUpperCase().includes('PTTN') || v.includes('패턴'));
-
             const monthlyIdx = {};
             for(let i=0; i<h.length; i++) {
                 if (String(h[i]).toUpperCase().replace(/\s/g, '') === 'QTY') {
@@ -379,17 +328,12 @@
                     if(match) monthlyIdx[parseInt(match[1], 10)] = i;
                 }
             }
-
             const result = [];
             for (let i = 1; i < rows.length; i++) {
                 const r = rows[i];
                 if (!r || !isStrictTarget(r, h)) continue;
-                
                 const monthly = {};
-                for(let m=1; m<=12; m++) {
-                    monthly[m] = monthlyIdx[m] ? Math.max(0, parseFloat(String(r[monthlyIdx[m]] || '0').replace(/,/g, '')) || 0) : 0;
-                }
-                
+                for(let m=1; m<=12; m++) monthly[m] = monthlyIdx[m] ? Math.max(0, parseFloat(String(r[monthlyIdx[m]] || '0').replace(/,/g, '')) || 0) : 0;
                 result.push({ d: String(r[idxD]||'기타').trim(), s: String(r[idxS]||''), p: String(r[idxP]||''), monthly: monthly });
             }
             return result;
@@ -400,24 +344,16 @@
             const h = rows[0].map(v => String(v || '').trim());
             const idxD = h.findIndex(v => v.includes('거래처')); 
             const idxS = h.findIndex(v => v.includes('사이즈') || v.toUpperCase().includes('SIZE'));
-            
             const monthIdx = {};
             for(let m=1; m<=12; m++) monthIdx[m] = h.findIndex(v => String(v).replace(/\s/g, '') === `${m}월(5년평균)`);
-            const idxAvgYear = h.findIndex(v => {
-                const c = String(v).replace(/\s/g, '');
-                return c === '5년평균(연간)' || c === '5년평균';
-            });
-
+            const idxAvgYear = h.findIndex(v => String(v).replace(/\s/g, '').includes('5년평균'));
             const result = [];
             for (let i = 1; i < rows.length; i++) {
                 const r = rows[i];
                 if (!r || idxS === -1) continue; 
-
                 const size = String(r[idxS] || '');
                 if (size.includes('235') || !size.includes('17.5')) continue; 
-                
                 const annualAvg = parseFloat(String(r[idxAvgYear]||0).replace(/,/g,'')) || 0;
-                
                 let monthlySum = 0;
                 const monthlyAvgRaw = {};
                 for(let m=1; m<=12; m++) {
@@ -425,13 +361,8 @@
                     monthlyAvgRaw[m] = mVal;
                     monthlySum += mVal;
                 }
-                
                 const monthlyAvg = {};
-                for(let m=1; m<=12; m++) {
-                    if (monthlySum > 0) monthlyAvg[m] = (monthlyAvgRaw[m] / monthlySum) * annualAvg;
-                    else monthlyAvg[m] = annualAvg / 12;
-                }
-                
+                for(let m=1; m<=12; m++) monthlyAvg[m] = monthlySum > 0 ? (monthlyAvgRaw[m] / monthlySum) * annualAvg : annualAvg / 12;
                 result.push({ d: String(r[idxD !== -1 ? idxD : 0]||'기타').trim(), s: size, monthlyAvg: monthlyAvg, annualAvg: annualAvg });
             }
             return result;
@@ -443,8 +374,7 @@
             sel.innerHTML = '';
             for (let m = 1; m <= selectedMonth; m++) {
                 const opt = document.createElement('option');
-                opt.value = m;
-                opt.textContent = `${m}월`;
+                opt.value = m; opt.textContent = `${m}월`;
                 if (m === selectedMonth) opt.selected = true;
                 sel.appendChild(opt);
             }
@@ -465,8 +395,7 @@
         }
 
         window.setSort = function(col) {
-            if (sortCol === col) sortDesc = !sortDesc; 
-            else { sortCol = col; sortDesc = true; }
+            if (sortCol === col) sortDesc = !sortDesc; else { sortCol = col; sortDesc = true; }
             render();
         }
 
@@ -484,47 +413,25 @@
         function setupSearch() {
             const input = document.getElementById('search-input');
             const list = document.getElementById('autocomplete-list');
-            if(!input || !list) return;
-
             input.addEventListener('input', function() {
                 const val = this.value.trim().toLowerCase().replace(/\s+/g, '');
                 const choVal = getChosung(val);
                 list.innerHTML = '';
-
-                if (!val) {
-                    list.classList.add('hidden');
-                    filterTable(''); 
-                    return;
-                }
-
-                const matches = uniqueDealers.filter(d => {
-                    const cleanName = d.name.toLowerCase().replace(/\s+/g, '');
-                    const cleanCho = d.chosung.replace(/\s+/g, '');
-                    return cleanName.includes(val) || cleanCho.includes(choVal);
-                });
-                
+                if (!val) { list.classList.add('hidden'); filterTable(''); return; }
+                const matches = uniqueDealers.filter(d => d.name.toLowerCase().replace(/\s+/g, '').includes(val) || d.chosung.replace(/\s+/g, '').includes(choVal));
                 if (matches.length > 0) {
                     matches.slice(0, 10).forEach(match => {
                         const div = document.createElement('div');
                         div.className = 'px-4 py-2.5 cursor-pointer hover:bg-slate-50 hover:text-red-600 transition-colors text-[11px] md:text-sm border-b border-slate-50 last:border-0';
                         div.innerHTML = `<span class="font-bold">${match.name}</span>`;
-                        div.addEventListener('click', function() {
-                            input.value = match.name;
-                            list.classList.add('hidden');
-                            filterTable(match.name);
-                        });
+                        div.addEventListener('click', function() { input.value = match.name; list.classList.add('hidden'); filterTable(match.name); });
                         list.appendChild(div);
                     });
                     list.classList.remove('hidden');
-                } else {
-                    list.classList.add('hidden');
-                }
+                } else list.classList.add('hidden');
                 filterTable(val, choVal);
             });
-
-            document.addEventListener('click', function(e) {
-                if (e.target !== input && e.target !== list) list.classList.add('hidden');
-            });
+            document.addEventListener('click', function(e) { if (e.target !== input && e.target !== list) list.classList.add('hidden'); });
         }
 
         function filterTable(term, choTerm = '') {
@@ -532,23 +439,12 @@
             document.querySelectorAll('#dealer-list tr.dealer-row').forEach(tr => {
                 const name = tr.getAttribute('data-name').toLowerCase().replace(/\s+/g, '');
                 const choName = tr.getAttribute('data-cho').replace(/\s+/g, '');
-                
                 if (name.includes(term) || (choTerm && choName.includes(choTerm))) tr.style.display = '';
-                else {
-                    tr.style.display = 'none';
-                    const onclickAttr = tr.getAttribute('onclick');
-                    if(onclickAttr) {
-                        const match = onclickAttr.match(/'([^']+)'/);
-                        if(match && document.getElementById(match[1])) document.getElementById(match[1]).classList.add('hidden');
-                    }
-                }
+                else { tr.style.display = 'none'; const onclickAttr = tr.getAttribute('onclick'); if(onclickAttr) { const match = onclickAttr.match(/'([^']+)'/); if(match && document.getElementById(match[1])) document.getElementById(match[1]).classList.add('hidden'); } }
             });
         }
 
-        function toggleRow(id) { 
-            const el = document.getElementById(id);
-            if(el) el.classList.toggle('hidden'); 
-        }
+        function toggleRow(id) { const el = document.getElementById(id); if(el) el.classList.toggle('hidden'); }
 
         const getYoYHTML = (cur, prev) => {
             if (prev === 0 && cur > 0) return `<span class="text-blue-500 font-black bg-blue-50 px-1.5 md:px-2 py-0.5 rounded">신규</span>`;
@@ -579,125 +475,73 @@
 
         function render() {
             updateSortIcons(); 
-
             const cur = rawCurrent.filter(r => matchFilterSize(r.s, filterSize) && matchPattern(r.p, filterPattern));
             const ly = rawLastYear.filter(r => matchFilterSize(r.s, filterSize) && matchPattern(r.p, filterPattern));
             const his = rawHistory.filter(r => matchFilterSize(r.s, filterSize)); 
-
             let sY = 0, sM = 0, sY_LY = 0, sM_LY = 0, sA_ytd = 0, sA_total = 0;
             const dMap = {};
-            
             cur.forEach(r => {
                 const mQty = r.monthly[selectedMonth] || 0;
-                let ytdQty = 0;
-                for(let m=1; m<=selectedMonth; m++) ytdQty += (r.monthly[m] || 0);
-
-                sY += ytdQty; 
-                sM += mQty;
+                let ytdQty = 0; for(let m=1; m<=selectedMonth; m++) ytdQty += (r.monthly[m] || 0);
+                sY += ytdQty; sM += mQty;
                 if(!dMap[r.d]) dMap[r.d] = { y:0, m:0, y_ly:0, m_ly:0, a_ytd:0, a_total:0, details:[] };
-                dMap[r.d].y += ytdQty; 
-                dMap[r.d].m += mQty;
+                dMap[r.d].y += ytdQty; dMap[r.d].m += mQty;
                 dMap[r.d].details.push({...r, m: mQty, y: ytdQty});
             });
-
             ly.forEach(r => {
                 const mQtyLY = r.monthly[selectedMonth] || 0;
-                let ytdQtyLY = 0;
-                for(let m=1; m<=selectedMonth; m++) ytdQtyLY += (r.monthly[m] || 0);
-
-                sY_LY += ytdQtyLY;
-                sM_LY += mQtyLY;
-                if(dMap[r.d]) {
-                    dMap[r.d].m_ly += mQtyLY;
-                    dMap[r.d].y_ly += ytdQtyLY;
-                } else {
-                    dMap[r.d] = { y:0, m:0, y_ly:ytdQtyLY, m_ly:mQtyLY, a_ytd:0, a_total:0, details:[] };
-                }
+                let ytdQtyLY = 0; for(let m=1; m<=selectedMonth; m++) ytdQtyLY += (r.monthly[m] || 0);
+                sY_LY += ytdQtyLY; sM_LY += mQtyLY;
+                if(dMap[r.d]) { dMap[r.d].m_ly += mQtyLY; dMap[r.d].y_ly += ytdQtyLY; } 
+                else dMap[r.d] = { y:0, m:0, y_ly:ytdQtyLY, m_ly:mQtyLY, a_ytd:0, a_total:0, details:[] };
             });
-
             his.forEach(r => {
-                let tA_ytd = 0;
-                let tA_total = r.annualAvg; 
-                for(let m=1; m<=selectedMonth; m++) tA_ytd += r.monthlyAvg[m];
-                
-                sA_ytd += tA_ytd;
-                sA_total += tA_total;
-                
-                if(dMap[r.d]) {
-                    dMap[r.d].a_ytd += tA_ytd;
-                    dMap[r.d].a_total += tA_total;
-                } else {
-                    dMap[r.d] = { y:0, m:0, y_ly:0, m_ly:0, a_ytd:tA_ytd, a_total:tA_total, details:[] }; 
-                }
+                let tA_ytd = 0; for(let m=1; m<=selectedMonth; m++) tA_ytd += r.monthlyAvg[m];
+                sA_ytd += tA_ytd; sA_total += r.annualAvg;
+                if(dMap[r.d]) { dMap[r.d].a_ytd += tA_ytd; dMap[r.d].a_total += r.annualAvg; } 
+                else dMap[r.d] = { y:0, m:0, y_ly:0, m_ly:0, a_ytd:tA_ytd, a_total:r.annualAvg, details:[] };
             });
 
             document.getElementById('ytd-val').innerText = Math.ceil(sY).toLocaleString();
             document.getElementById('month-val').innerText = Math.ceil(sM).toLocaleString();
             document.getElementById('month-label').innerText = `당월 실적 (${selectedMonth}월)`;
-            
-            const rc = document.getElementById('row-count');
-            if(rc) {
-                rc.innerText = `데이터 처리: ${cur.length}건`;
-                rc.classList.replace('text-red-600', 'text-slate-500'); 
-            }
-            
+            document.getElementById('row-count').innerText = `데이터: ${cur.length}건`;
             if(rawLastYear.length > 0) {
                 document.getElementById('ly-month-val').innerText = Math.ceil(sM_LY).toLocaleString();
-                const badgeMth = getBadgeHTML(sM, sM_LY);
-                const badgeElMth = document.getElementById('yoy-badge');
-                badgeElMth.innerText = badgeMth.t;
-                badgeElMth.className = `text-[8px] md:text-[10px] px-1.5 md:px-3 py-1 md:py-1.5 rounded md:rounded-lg font-black border transition-transform group-hover:scale-105 whitespace-nowrap self-start ${badgeMth.c}`;
-
+                const bMth = getBadgeHTML(sM, sM_LY);
+                const eMth = document.getElementById('yoy-badge'); eMth.innerText = bMth.t; eMth.className = `text-[8px] md:text-[10px] px-1.5 md:px-3 py-1 md:py-1.5 rounded md:rounded-lg font-black border transition-transform group-hover:scale-105 whitespace-nowrap self-start ${bMth.c}`;
                 document.getElementById('ly-ytd-val').innerText = Math.ceil(sY_LY).toLocaleString();
-                const badgeYtd = getBadgeHTML(sY, sY_LY);
-                const badgeElYtd = document.getElementById('ytd-yoy-badge');
-                badgeElYtd.innerText = badgeYtd.t;
-                badgeElYtd.className = `text-[8px] md:text-[10px] px-1.5 md:px-3 py-1 md:py-1.5 rounded md:rounded-lg font-black border shadow-sm whitespace-nowrap self-start transition-transform group-hover:scale-105 ${badgeYtd.c}`;
+                const bYtd = getBadgeHTML(sY, sY_LY);
+                const eYtd = document.getElementById('ytd-yoy-badge'); eYtd.innerText = bYtd.t; eYtd.className = `text-[8px] md:text-[10px] px-1.5 md:px-3 py-1 md:py-1.5 rounded md:rounded-lg font-black border shadow-sm whitespace-nowrap self-start transition-transform group-hover:scale-105 ${bYtd.c}`;
             }
-
-            const pctYtd = sA_ytd > 0 ? Math.ceil((sY/sA_ytd)*100) : 0;
-            document.getElementById('attainment-ytd-pct').innerText = pctYtd + "%";
-            document.getElementById('attainment-ytd-bar').style.width = Math.min(pctYtd, 100) + "%";
+            const pYtd = sA_ytd > 0 ? Math.ceil((sY/sA_ytd)*100) : 0;
+            document.getElementById('attainment-ytd-pct').innerText = pYtd + "%";
+            document.getElementById('attainment-ytd-bar').style.width = Math.min(pYtd, 100) + "%";
             document.getElementById('target-ytd-val').innerText = Math.ceil(sA_ytd).toLocaleString();
-
-            const pctTotal = sA_total > 0 ? Math.ceil((sY/sA_total)*100) : 0;
-            document.getElementById('attainment-total-pct').innerText = pctTotal + "%";
-            document.getElementById('attainment-total-bar').style.width = Math.min(pctTotal, 100) + "%";
+            const pTot = sA_total > 0 ? Math.ceil((sY/sA_total)*100) : 0;
+            document.getElementById('attainment-total-pct').innerText = pTot + "%";
+            document.getElementById('attainment-total-bar').style.width = Math.min(pTot, 100) + "%";
             document.getElementById('target-total-val').innerText = Math.ceil(sA_total).toLocaleString();
 
-            let entries = Object.entries(dMap).filter(([n, d]) => !(d.y === 0 && d.m === 0 && d.m_ly === 0 && d.y_ly === 0 && d.a_total === 0 && d.a_ytd === 0));
-
+            let entries = Object.entries(dMap).filter(([n, d]) => !(d.y === 0 && d.m === 0 && d.m_ly === 0 && d.y_ly === 0 && d.a_total === 0));
             entries.sort((a, b) => {
-                let valA, valB;
                 let dA = a[1], dB = b[1];
-
-                if (sortCol === 'ly') { valA = dA.m_ly; valB = dB.m_ly; } 
-                else if (sortCol === 'cm') { valA = dA.m; valB = dB.m; } 
-                else if (sortCol === 'yoy') {
-                    valA = dA.m_ly === 0 ? (dA.m > 0 ? 999 : 0) : (dA.m / dA.m_ly);
-                    valB = dB.m_ly === 0 ? (dB.m > 0 ? 999 : 0) : (dB.m / dB.m_ly);
-                } else if (sortCol === 'atot') {
-                    valA = dA.a_total === 0 ? 0 : (dA.y / dA.a_total);
-                    valB = dB.a_total === 0 ? 0 : (dB.y / dB.a_total);
-                } else if (sortCol === 'aytd') {
-                    valA = dA.a_ytd === 0 ? 0 : (dA.y / dA.a_ytd);
-                    valB = dB.a_ytd === 0 ? 0 : (dB.y / dB.a_ytd);
-                } else { valA = dA.y; valB = dB.y; }
-
-                return sortDesc ? valB - valA : valA - valB;
+                if (sortCol === 'ly') return sortDesc ? dB.m_ly - dA.m_ly : dA.m_ly - dB.m_ly;
+                if (sortCol === 'cm') return sortDesc ? dB.m - dA.m : dA.m - dB.m;
+                if (sortCol === 'atot') return sortDesc ? dB.a_total - dA.a_total : dA.a_total - dB.a_total;
+                if (sortCol === 'aytd') return sortDesc ? (dB.a_ytd === 0 ? 0 : dB.y/dB.a_ytd) - (dA.a_ytd === 0 ? 0 : dA.y/dA.a_ytd) : (dA.a_ytd === 0 ? 0 : dA.y/dA.a_ytd) - (dB.a_ytd === 0 ? 0 : dB.y/dB.a_ytd);
+                return sortDesc ? dB.y - dA.y : dA.y - dB.y;
             });
 
             const tbody = document.getElementById('dealer-list');
-            let htmlBuffer = '';
-            
+            let buffer = '';
             entries.forEach(([n, d], idx) => {
-                const pctTot = d.a_total > 0 ? Math.ceil((d.y/d.a_total)*100) : 0;
-                const pctYtd = d.a_ytd > 0 ? Math.ceil((d.y/d.a_ytd)*100) : 0;
+                const pT = d.a_total > 0 ? Math.ceil((d.y/d.a_total)*100) : 0;
+                const pY = d.a_ytd > 0 ? Math.ceil((d.y/d.a_ytd)*100) : 0;
                 const detailId = `detail-${idx}`;
-                const choStr = getChosung(n).replace(/\s+/g, '');
-                
-                htmlBuffer += `
-                    <tr class="dealer-row hover:bg-slate-50/80 cursor-pointer transition-colors group" data-name="${n}" data-cho="${choStr}" onclick="toggleRow('${detailId}')">
+                const cho = getChosung(n).replace(/\s+/g, '');
+                buffer += `
+                    <tr class="dealer-row hover:bg-slate-50/80 cursor-pointer transition-colors group" data-name="${n}" data-cho="${cho}" onclick="toggleRow('${detailId}')">
                         <td class="px-3 md:px-8 py-3 md:py-4 text-slate-700 font-bold flex items-center gap-1.5 md:gap-3 sticky left-0 top-0 bg-white group-hover:bg-slate-50/80 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-r border-slate-100 max-w-[120px] md:max-w-[200px]">
                             <span class="w-4 h-4 md:w-6 md:h-6 flex-shrink-0 flex items-center justify-center rounded-full bg-slate-100 text-slate-400 group-hover:bg-red-50 group-hover:text-red-500 transition-colors text-[9px] md:text-xs">+</span> 
                             <span class="truncate w-full text-[10px] md:text-sm">${n}</span>
@@ -705,60 +549,35 @@
                         <td class="px-2 md:px-5 py-3 md:py-4 text-right text-slate-400 bg-slate-50/30">${Math.ceil(d.m_ly).toLocaleString()}</td>
                         <td class="px-2 md:px-5 py-3 md:py-4 text-right text-slate-700 font-bold">${Math.ceil(d.m).toLocaleString()}</td>
                         <td class="px-2 md:px-5 py-3 md:py-4 text-right text-[10px] md:text-xs tracking-tight">${getYoYHTML(d.m, d.m_ly)}</td>
-                        
                         <td class="px-4 md:px-6 py-2 md:py-3 text-right bg-red-50/30 border-l border-slate-100 whitespace-nowrap">
-                            <div class="flex items-center justify-end">
-                                <span class="bstk-red font-black text-sm md:text-base">${Math.ceil(d.y).toLocaleString()}</span>
-                                ${getInlineYoYHTML(d.y, d.y_ly)}
-                            </div>
+                            <div class="flex items-center justify-end"><span class="bstk-red font-black text-sm md:text-base">${Math.ceil(d.y).toLocaleString()}</span>${getInlineYoYHTML(d.y, d.y_ly)}</div>
                             <div class="text-[8px] md:text-[10px] text-slate-500 font-medium mt-0.5 tracking-tighter">작년 누적: ${Math.ceil(d.y_ly).toLocaleString()}</div>
                         </td>
-
                         <td class="px-4 md:px-6 py-2 md:py-3 text-right whitespace-nowrap">
                             <div class="font-bold text-slate-600 text-[11px] md:text-sm">${Math.ceil(d.a_total).toLocaleString()}</div>
-                            <div class="text-[9px] md:text-[10px] ${pctTot >= 100 ? 'text-indigo-500' : 'text-slate-400'} font-black mt-0.5 tracking-tighter">(${pctTot}%)</div>
+                            <div class="text-[9px] md:text-[10px] ${pT >= 100 ? 'text-indigo-500' : 'text-slate-400'} font-black mt-0.5 tracking-tighter">(${pT}%)</div>
                         </td>
-
                         <td class="px-4 md:px-6 py-2 md:py-3 text-right whitespace-nowrap">
                             <div class="font-bold text-slate-600 text-[11px] md:text-sm">${Math.ceil(d.a_ytd).toLocaleString()}</div>
-                            <div class="text-[9px] md:text-[10px] ${pctYtd >= 100 ? 'text-emerald-500' : 'text-slate-400'} font-black mt-0.5 tracking-tighter">(${pctYtd}%)</div>
+                            <div class="text-[9px] md:text-[10px] ${pY >= 100 ? 'text-emerald-500' : 'text-slate-400'} font-black mt-0.5 tracking-tighter">(${pY}%)</div>
                         </td>
                     </tr>
                     <tr id="${detailId}" class="hidden bg-slate-50/50">
                         <td colspan="7" class="px-4 md:px-8 py-3 md:py-4 pb-4 md:pb-6">
                             <div class="bg-white rounded-xl md:rounded-2xl border border-slate-200 p-3 md:p-5 shadow-sm overflow-x-auto">
                                 <table class="w-full text-[9px] md:text-xs text-left min-w-[300px]">
-                                    <thead>
-                                        <tr class="text-slate-400 border-b border-slate-100">
-                                            <th class="pb-2 md:pb-3 pl-1 md:pl-2">상세 규격 & 패턴</th>
-                                            <th class="pb-2 md:pb-3 text-right">당월 판매</th>
-                                            <th class="pb-2 md:pb-3 text-right pr-1 md:pr-2">누적 판매</th>
-                                        </tr>
-                                    </thead>
+                                    <thead><tr class="text-slate-400 border-b border-slate-100"><th class="pb-2 md:pb-3 pl-1 md:pl-2">상세 규격 & 패턴</th><th class="pb-2 md:pb-3 text-right">당월</th><th class="pb-2 md:pb-3 text-right pr-1 md:pr-2">누적</th></tr></thead>
                                     <tbody class="divide-y divide-slate-50">
-                                        ${d.details.map(det => `
-                                        <tr class="hover:bg-slate-50/50 transition-colors">
-                                            <td class="py-2 md:py-2.5 pl-1 md:pl-2"><strong class="text-slate-700">${det.s}</strong> <span class="text-slate-400 ml-1 md:ml-2">${det.p}</span></td>
-                                            <td class="py-2 md:py-2.5 text-right text-slate-600 font-medium">${Math.ceil(det.m).toLocaleString()}</td>
-                                            <td class="py-2 md:py-2.5 text-right bstk-red font-bold pr-1 md:pr-2">${Math.ceil(det.y).toLocaleString()}</td>
-                                        </tr>`).join('')}
+                                        ${d.details.map(det => `<tr class="hover:bg-slate-50/50 transition-colors"><td class="py-2 md:py-2.5 pl-1 md:pl-2"><strong class="text-slate-700">${det.s}</strong> <span class="text-slate-400 ml-1 md:ml-2">${det.p}</span></td><td class="py-2 md:py-2.5 text-right text-slate-600 font-medium">${Math.ceil(det.m).toLocaleString()}</td><td class="py-2 md:py-2.5 text-right bstk-red font-bold pr-1 md:pr-2">${Math.ceil(det.y).toLocaleString()}</td></tr>`).join('')}
                                     </tbody>
                                 </table>
                             </div>
                         </td>
                     </tr>`;
             });
-
-            tbody.innerHTML = htmlBuffer; 
-            
-            const searchInput = document.getElementById('search-input');
-            if(searchInput && searchInput.value) {
-                const term = searchInput.value.trim().toLowerCase().replace(/\s+/g, '');
-                const choTerm = getChosung(term);
-                filterTable(term, choTerm);
-            }
+            tbody.innerHTML = buffer; 
+            const sIn = document.getElementById('search-input'); if(sIn && sIn.value) { const t = sIn.value.trim().toLowerCase().replace(/\s+/g, ''); filterTable(t, getChosung(t)); }
         }
-        
         window.onload = init;
     </script>
 </body>
