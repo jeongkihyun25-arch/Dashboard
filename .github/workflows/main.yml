@@ -23,7 +23,7 @@ jobs:
       - name: 필수 라이브러리 설치
         run: pip install -r requirements.txt
 
-      - name: 엑셀 데이터 수집 및 변환 실행
+      - name: 데이터 수집 및 엑셀 변환 실행
         env:
           WOS_ID: ${{ secrets.WOS_ID }}
           WOS_PW: ${{ secrets.WOS_PW }}
@@ -33,4 +33,4 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "매일 자동 업데이트: 진짜 엑셀(.xlsx)로 변환 완료"
-          file_pattern: 'current_sales.xlsx' # 다시 xlsx로 변경
+          file_pattern: 'current_sales.xlsx'
