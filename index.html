@@ -12,7 +12,6 @@
         .bstk-red { color: #E30613; }
         .bg-bstk-red { background-color: #E30613; }
         
-        /* 쌈박한 디자인을 위한 커스텀 스타일 */
         .glass-header { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(226, 232, 240, 0.8); }
         .card-shadow { box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05), 0 4px 10px -3px rgba(0, 0, 0, 0.02); transition: transform 0.2s ease, box-shadow 0.2s ease; }
         .card-shadow:hover { transform: translateY(-2px); box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.08), 0 8px 15px -3px rgba(0, 0, 0, 0.04); }
@@ -22,7 +21,6 @@
         .filter-inactive { background-color: white; color: #64748b; border: 1px solid #e2e8f0; }
         .filter-inactive:hover { border-color: #cbd5e1; color: #334155; background-color: #f8fafc; }
         
-        /* 스크롤바 커스텀 */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
@@ -40,7 +38,7 @@
             <div class="flex items-center gap-4">
                 <div id="row-count" class="text-[11px] font-bold text-slate-500 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm hidden md:block">데이터 로딩 중...</div>
                 <select id="month-select" onchange="changeMonth()" class="border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 bg-white shadow-sm hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all cursor-pointer">
-                    </select>
+                </select>
             </div>
         </div>
     </header>
@@ -159,11 +157,12 @@
         const URL_HIST = `https://raw.githubusercontent.com/${GITHUB_USER}/${REPO_NAME}/main/historical_data.xlsx?t=${t}`;
 
         let rawCurrent = [], rawLastYear = [], rawHistory = [], filterSize = 'ALL', filterPattern = 'ALL', selectedMonth = new Date().getMonth() + 1;
-        let uniqueDealers = []; // 자동완성용 대리점 목록
+        let uniqueDealers = [];
 
-        // 초성 추출 함수 (가락타이어 -> ㄱㄹㅌㅇㅇ)
+        // 초성 추출 함수
         const CHOSUNG = ["ㄱ", "ㄲ", "ㄴ", "ㄷ", "ㄸ", "ㄹ", "ㅁ", "ㅂ", "ㅃ", "ㅅ", "ㅆ", "ㅇ", "ㅈ", "ㅉ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
         function getChosung(str) {
+            if (!str) return "";
             let res = "";
             for(let i=0; i<str.length; i++) {
                 let code = str.charCodeAt(i) - 44032;
@@ -173,7 +172,6 @@
             return res;
         }
 
-        // 정밀 타겟팅 로직
         const isStrictTarget = (row, header) => {
             const mtpIdx = header.findIndex(v => String(v || '').toUpperCase().includes('MTP분류'));
             const deptIdx = header.findIndex(v => String(v || '').includes('이익부서'));
@@ -212,33 +210,53 @@
                 const ab = await res.arrayBuffer();
                 const wb = XLSX.read(new Uint8Array(ab), {type: 'array'});
                 return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
-            } catch (e) { return []; }
+            } catch (e) {
+                return [];
+            }
         }
 
+        // 전체 실행 로직에 에러 캐칭(try-catch) 적용
         async function init() {
-            selectedMonth = new Date().getMonth() + 1;
-            document.getElementById('month-label').innerText = `당월 실적 (${selectedMonth}월)`;
-            
-            const [cRows, lyRows, hRows] = await Promise.all([fetchRaw(URL_CURR), fetchRaw(URL_LAST_YEAR), fetchRaw(URL_HIST)]);
-            
-            rawCurrent = processCurrent(cRows);
-            rawLastYear = processCurrent(lyRows);
-            rawHistory = processHistory(hRows); 
-            
-            if(rawLastYear.length === 0) document.getElementById('ly-month-text').innerText = "작년 데이터가 없습니다.";
+            try {
+                selectedMonth = new Date().getMonth() + 1;
+                const monthLabel = document.getElementById('month-label');
+                if(monthLabel) monthLabel.innerText = `당월 실적 (${selectedMonth}월)`;
+                
+                const [cRows, lyRows, hRows] = await Promise.all([fetchRaw(URL_CURR), fetchRaw(URL_LAST_YEAR), fetchRaw(URL_HIST)]);
+                
+                rawCurrent = processCurrent(cRows, new Date().getFullYear());
+                rawLastYear = processCurrent(lyRows, new Date().getFullYear() - 1);
+                rawHistory = processHistory(hRows); 
+                
+                if(rawLastYear.length === 0) {
+                    const lyText = document.getElementById('ly-month-text');
+                    if(lyText) lyText.innerText = "작년 데이터가 없습니다.";
+                }
 
-            // 대리점 고유 목록 추출
-            const dealerSet = new Set();
-            [...rawCurrent, ...rawLastYear, ...rawHistory].forEach(r => dealerSet.add(r.d));
-            uniqueDealers = Array.from(dealerSet).map(name => ({ name: name, chosung: getChosung(name) }));
+                // 대리점 고유 목록 추출
+                const dealerSet = new Set();
+                [...rawCurrent, ...rawLastYear, ...rawHistory].forEach(r => {
+                    if (r && r.d) dealerSet.add(r.d);
+                });
+                uniqueDealers = Array.from(dealerSet).map(name => ({ name: name, chosung: getChosung(name) }));
 
-            initMonthSelector();
-            setupSearch();
-            render();
+                initMonthSelector();
+                setupSearch();
+                render();
+            } catch (e) {
+                // 에러 발생 시 UI 화면에 출력
+                console.error(e);
+                const rc = document.getElementById('row-count');
+                if(rc) {
+                    rc.innerText = "❌ 데이터 에러: " + e.message;
+                    rc.classList.replace('text-slate-500', 'text-red-600');
+                    rc.classList.replace('bg-slate-100', 'bg-red-50');
+                }
+            }
         }
 
-        function processCurrent(rows) {
-            if (rows.length < 2) return [];
+        function processCurrent(rows, targetYear) {
+            if (!rows || rows.length < 2) return [];
             const h = rows[0].map(v => String(v || '').trim());
             const idxD = h.findIndex(v => v.includes('거래처') || v.includes('딜러'));
             const idxS = h.findIndex(v => v.toUpperCase().includes('SIZE') || v.includes('사이즈'));
@@ -251,7 +269,7 @@
             for(let i=0; i<h.length; i++) {
                 if (String(h[i]).toUpperCase().replace(/\s/g, '') === 'QTY') {
                     const prevCol = String(h[i-1] || '');
-                    const match = prevCol.match(/-(\d{2})/);
+                    const match = prevCol.match(new RegExp(`${targetYear}-(\\d{2})`)) || prevCol.match(/-(\d{2})/);
                     if(match) monthlyIdx[parseInt(match[1], 10)] = i;
                 }
             }
@@ -273,7 +291,7 @@
         }
 
         function processHistory(rows) {
-            if (rows.length < 2) return [];
+            if (!rows || rows.length < 2) return [];
             const h = rows[0].map(v => String(v || '').trim());
             const idxD = h.findIndex(v => v.includes('거래처')); 
             const idxS = h.findIndex(v => v.includes('사이즈') || v.toUpperCase().includes('SIZE'));
@@ -303,6 +321,7 @@
 
         function initMonthSelector() {
             const sel = document.getElementById('month-select');
+            if(!sel) return;
             sel.innerHTML = '';
             for (let m = 1; m <= selectedMonth; m++) {
                 const opt = document.createElement('option');
@@ -327,10 +346,10 @@
             render();
         }
 
-        // 💡 초성 검색 및 테이블 필터링
         function setupSearch() {
             const input = document.getElementById('search-input');
             const list = document.getElementById('autocomplete-list');
+            if(!input || !list) return;
 
             input.addEventListener('input', function() {
                 const val = this.value.trim().toLowerCase();
@@ -339,18 +358,16 @@
 
                 if (!val) {
                     list.classList.add('hidden');
-                    filterTable(''); // 검색어 없으면 전체 표시
+                    filterTable(''); 
                     return;
                 }
 
-                // 매칭되는 딜러 찾기 (일반 텍스트 포함 OR 초성 포함)
                 const matches = uniqueDealers.filter(d => d.name.toLowerCase().includes(val) || d.chosung.includes(choVal));
                 
                 if (matches.length > 0) {
-                    matches.slice(0, 10).forEach(match => { // 최대 10개 표시
+                    matches.slice(0, 10).forEach(match => {
                         const div = document.createElement('div');
                         div.className = 'px-4 py-3 cursor-pointer hover:bg-slate-50 hover:text-red-600 transition-colors text-sm';
-                        // 검색어 하이라이트 처리는 복잡성을 줄이기 위해 생략, 이름만 깔끔하게 노출
                         div.innerHTML = `<span class="font-bold">${match.name}</span>`;
                         div.addEventListener('click', function() {
                             input.value = match.name;
@@ -367,14 +384,13 @@
                 filterTable(val, choVal);
             });
 
-            // 외부 클릭 시 닫기
             document.addEventListener('click', function(e) {
                 if (e.target !== input && e.target !== list) list.classList.add('hidden');
             });
         }
 
         function filterTable(term, choTerm = '') {
-            term = term.toLowerCase();
+            term = String(term).toLowerCase();
             document.querySelectorAll('#dealer-list tr.dealer-row').forEach(tr => {
                 const name = tr.getAttribute('data-name').toLowerCase();
                 const choName = getChosung(name);
@@ -383,14 +399,21 @@
                     tr.style.display = '';
                 } else {
                     tr.style.display = 'none';
-                    // 상세 내역도 닫기
-                    const detailId = tr.getAttribute('onclick').match(/'([^']+)'/)[1];
-                    document.getElementById(detailId).classList.add('hidden');
+                    const onclickAttr = tr.getAttribute('onclick');
+                    if(onclickAttr) {
+                        const match = onclickAttr.match(/'([^']+)'/);
+                        if(match && document.getElementById(match[1])) {
+                            document.getElementById(match[1]).classList.add('hidden');
+                        }
+                    }
                 }
             });
         }
 
-        function toggleRow(id) { document.getElementById(id).classList.toggle('hidden'); }
+        function toggleRow(id) { 
+            const el = document.getElementById(id);
+            if(el) el.classList.toggle('hidden'); 
+        }
 
         const getYoYHTML = (cur, prev) => {
             if (prev === 0 && cur > 0) return `<span class="text-blue-500 font-black bg-blue-50 px-2 py-0.5 rounded">신규</span>`;
@@ -444,7 +467,12 @@
             document.getElementById('ytd-val').innerText = Math.ceil(sY).toLocaleString();
             document.getElementById('month-val').innerText = Math.ceil(sM).toLocaleString();
             document.getElementById('month-label').innerText = `당월 실적 (${selectedMonth}월)`;
-            document.getElementById('row-count').innerText = `필터: ${cur.length}건`;
+            
+            const rc = document.getElementById('row-count');
+            if(rc) {
+                rc.innerText = `데이터 처리: ${cur.length}건`;
+                rc.classList.replace('text-red-600', 'text-slate-500'); // 에러 복구 시 색상 원복
+            }
             
             if(rawLastYear.length > 0) {
                 document.getElementById('ly-month-val').innerText = Math.ceil(sM_LY).toLocaleString();
@@ -503,9 +531,12 @@
                         </td>
                     </tr>`;
             });
-            // 렌더링 직후 현재 검색어 뷰 유지
-            filterTable(document.getElementById('search-input').value);
+            
+            const searchInput = document.getElementById('search-input');
+            if(searchInput) filterTable(searchInput.value);
         }
+        
+        window.onload = init;
     </script>
 </body>
 </html>
