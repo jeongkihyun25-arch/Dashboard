@@ -33,7 +33,6 @@
         
         .table-scroll { -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
         
-        /* 툴팁 모바일 최적화 */
         .tooltip-text { transition: opacity 0.2s ease, transform 0.2s ease; z-index: 100; word-break: keep-all; line-height: 1.4; }
         @media (hover: hover) {
             .group:hover .tooltip-text { opacity: 1; transform: translateY(0) translateX(-50%); pointer-events: auto; }
@@ -212,16 +211,16 @@
                             </th>
 
                             <th class="sortable px-4 md:px-6 py-3 md:py-4 text-right group relative" onclick="setSort('atot')" ontouchstart="showTooltip(this, 'left')" ontouchend="hideTooltip(this)">
-                                연간 평균(목표) <span id="sort-icon-atot" class="inline-block w-2 md:w-3 text-center"></span>
+                                5년 평균<br>1년수량 <span id="sort-icon-atot" class="inline-block w-2 md:w-3 text-center"></span>
                                 <div class="tooltip-text align-left opacity-0 pointer-events-none transform translate-y-1 absolute top-full left-1/2 mt-1 w-[140px] bg-slate-800 text-white text-[9px] rounded-lg py-1.5 px-2 text-center shadow-lg z-40">
-                                    과거 5년 동안의<br><span class="text-slate-300">1년(12개월) 전체 평균량</span>
+                                    과거 5년 동안의<br><span class="text-indigo-300">1년(12개월) 전체 평균량</span><br>및 올해 누계 달성률(%)
                                 </div>
                             </th>
                             
-                            <th class="sortable px-4 md:px-6 py-3 md:py-4 text-right group relative" onclick="setSort('avg')" ontouchstart="showTooltip(this, 'right')" ontouchend="hideTooltip(this)">
-                                연간 달성률 <span id="sort-icon-avg" class="inline-block w-2 md:w-3 text-center"></span>
+                            <th class="sortable px-4 md:px-6 py-3 md:py-4 text-right group relative" onclick="setSort('aytd')" ontouchstart="showTooltip(this, 'right')" ontouchend="hideTooltip(this)">
+                                5년 평균<br>당월까지 누적 <span id="sort-icon-aytd" class="inline-block w-2 md:w-3 text-center"></span>
                                 <div class="tooltip-text align-right opacity-0 pointer-events-none transform translate-y-1 absolute top-full right-0 mt-1 w-[150px] bg-slate-800 text-white text-[9px] rounded-lg py-1.5 px-2 text-center shadow-lg z-40">
-                                    연간 평균량(목표) 대비<br>올해 현재까지 누적 달성률
+                                    과거 5년 <span class="text-emerald-300">동기간 누적 평균량</span><br>대비 현재 누계 실적 도달률
                                 </div>
                             </th>
                         </tr>
@@ -233,7 +232,6 @@
     </main>
 
     <script>
-        // 💡 툴팁 모바일 터치 개선 (잘림 방지)
         function showTooltip(el, align) {
             const tooltip = el.querySelector('.tooltip-text');
             if(tooltip) { 
@@ -404,7 +402,10 @@
             
             const monthIdx = {};
             for(let m=1; m<=12; m++) monthIdx[m] = h.findIndex(v => String(v).replace(/\s/g, '') === `${m}월(5년평균)`);
-            const idxAvgYear = h.findIndex(v => String(v).replace(/\s/g, '').includes('5년평균'));
+            const idxAvgYear = h.findIndex(v => {
+                const c = String(v).replace(/\s/g, '');
+                return c === '5년평균(연간)' || c === '5년평균';
+            });
 
             const result = [];
             for (let i = 1; i < rows.length; i++) {
@@ -414,13 +415,23 @@
                 const size = String(r[idxS] || '');
                 if (size.includes('235') || !size.includes('17.5')) continue; 
                 
-                const monthlyAvg = {};
                 const annualAvg = parseFloat(String(r[idxAvgYear]||0).replace(/,/g,'')) || 0;
-
+                
+                let monthlySum = 0;
+                const monthlyAvgRaw = {};
                 for(let m=1; m<=12; m++) {
-                    monthlyAvg[m] = monthIdx[m] !== -1 ? parseFloat(String(r[monthIdx[m]]||0).replace(/,/g,'')) || 0 : annualAvg / 12; 
+                    const mVal = monthIdx[m] !== -1 ? parseFloat(String(r[monthIdx[m]]||0).replace(/,/g,'')) || 0 : 0;
+                    monthlyAvgRaw[m] = mVal;
+                    monthlySum += mVal;
                 }
-                result.push({ d: String(r[idxD !== -1 ? idxD : 0]||'기타').trim(), s: size, monthlyAvg: monthlyAvg });
+                
+                const monthlyAvg = {};
+                for(let m=1; m<=12; m++) {
+                    if (monthlySum > 0) monthlyAvg[m] = (monthlyAvgRaw[m] / monthlySum) * annualAvg;
+                    else monthlyAvg[m] = annualAvg / 12;
+                }
+                
+                result.push({ d: String(r[idxD !== -1 ? idxD : 0]||'기타').trim(), s: size, monthlyAvg: monthlyAvg, annualAvg: annualAvg });
             }
             return result;
         }
@@ -459,7 +470,7 @@
         }
 
         function updateSortIcons() {
-            const cols = ['ly', 'cm', 'yoy', 'ytd', 'atot', 'avg'];
+            const cols = ['ly', 'cm', 'yoy', 'ytd', 'atot', 'aytd'];
             cols.forEach(c => {
                 const icon = document.getElementById(`sort-icon-${c}`);
                 if(icon) {
@@ -572,7 +583,6 @@
             const ly = rawLastYear.filter(r => matchFilterSize(r.s, filterSize) && matchPattern(r.p, filterPattern));
             const his = rawHistory.filter(r => matchFilterSize(r.s, filterSize)); 
 
-            // 💡 sA_ytd: 5년평균 (동기간 누적) / sA_total: 5년평균 (1년치)
             let sY = 0, sM = 0, sY_LY = 0, sM_LY = 0, sA_ytd = 0, sA_total = 0;
             const dMap = {};
             
@@ -605,9 +615,9 @@
             });
 
             his.forEach(r => {
-                let tA_ytd = 0, tA_total = 0;
+                let tA_ytd = 0;
+                let tA_total = r.annualAvg; 
                 for(let m=1; m<=selectedMonth; m++) tA_ytd += r.monthlyAvg[m];
-                for(let m=1; m<=12; m++) tA_total += r.monthlyAvg[m];
                 
                 sA_ytd += tA_ytd;
                 sA_total += tA_total;
@@ -644,19 +654,17 @@
                 badgeElYtd.className = `text-[8px] md:text-[10px] px-1.5 md:px-3 py-1 md:py-1.5 rounded md:rounded-lg font-black border shadow-sm whitespace-nowrap self-start transition-transform group-hover:scale-105 ${badgeYtd.c}`;
             }
 
-            // 💡 3번 카드 (동기간 누적 도달률)
             const pctYtd = sA_ytd > 0 ? Math.ceil((sY/sA_ytd)*100) : 0;
             document.getElementById('attainment-ytd-pct').innerText = pctYtd + "%";
             document.getElementById('attainment-ytd-bar').style.width = Math.min(pctYtd, 100) + "%";
             document.getElementById('target-ytd-val').innerText = Math.ceil(sA_ytd).toLocaleString();
 
-            // 💡 4번 카드 (연간 총 달성률)
             const pctTotal = sA_total > 0 ? Math.ceil((sY/sA_total)*100) : 0;
             document.getElementById('attainment-total-pct').innerText = pctTotal + "%";
             document.getElementById('attainment-total-bar').style.width = Math.min(pctTotal, 100) + "%";
             document.getElementById('target-total-val').innerText = Math.ceil(sA_total).toLocaleString();
 
-            let entries = Object.entries(dMap).filter(([n, d]) => !(d.y === 0 && d.m === 0 && d.m_ly === 0 && d.y_ly === 0 && d.a_total === 0));
+            let entries = Object.entries(dMap).filter(([n, d]) => !(d.y === 0 && d.m === 0 && d.m_ly === 0 && d.y_ly === 0 && d.a_total === 0 && d.a_ytd === 0));
 
             entries.sort((a, b) => {
                 let valA, valB;
@@ -668,10 +676,11 @@
                     valA = dA.m_ly === 0 ? (dA.m > 0 ? 999 : 0) : (dA.m / dA.m_ly);
                     valB = dB.m_ly === 0 ? (dB.m > 0 ? 999 : 0) : (dB.m / dB.m_ly);
                 } else if (sortCol === 'atot') {
-                    valA = dA.a_total; valB = dB.a_total;
-                } else if (sortCol === 'avg') {
                     valA = dA.a_total === 0 ? 0 : (dA.y / dA.a_total);
                     valB = dB.a_total === 0 ? 0 : (dB.y / dB.a_total);
+                } else if (sortCol === 'aytd') {
+                    valA = dA.a_ytd === 0 ? 0 : (dA.y / dA.a_ytd);
+                    valB = dB.a_ytd === 0 ? 0 : (dB.y / dB.a_ytd);
                 } else { valA = dA.y; valB = dB.y; }
 
                 return sortDesc ? valB - valA : valA - valB;
@@ -681,7 +690,8 @@
             let htmlBuffer = '';
             
             entries.forEach(([n, d], idx) => {
-                const dPct = d.a_total > 0 ? Math.ceil((d.y/d.a_total)*100) : 0;
+                const pctTot = d.a_total > 0 ? Math.ceil((d.y/d.a_total)*100) : 0;
+                const pctYtd = d.a_ytd > 0 ? Math.ceil((d.y/d.a_ytd)*100) : 0;
                 const detailId = `detail-${idx}`;
                 const choStr = getChosung(n).replace(/\s+/g, '');
                 
@@ -705,10 +715,12 @@
 
                         <td class="px-4 md:px-6 py-2 md:py-3 text-right whitespace-nowrap">
                             <div class="font-bold text-slate-600 text-[11px] md:text-sm">${Math.ceil(d.a_total).toLocaleString()}</div>
+                            <div class="text-[9px] md:text-[10px] ${pctTot >= 100 ? 'text-indigo-500' : 'text-slate-400'} font-black mt-0.5 tracking-tighter">(${pctTot}%)</div>
                         </td>
 
-                        <td class="px-4 md:px-6 py-2 md:py-3 text-right">
-                            <div class="font-black text-sm md:text-base ${dPct >= 100 ? 'text-emerald-500' : 'text-slate-500'}">${dPct}%</div>
+                        <td class="px-4 md:px-6 py-2 md:py-3 text-right whitespace-nowrap">
+                            <div class="font-bold text-slate-600 text-[11px] md:text-sm">${Math.ceil(d.a_ytd).toLocaleString()}</div>
+                            <div class="text-[9px] md:text-[10px] ${pctYtd >= 100 ? 'text-emerald-500' : 'text-slate-400'} font-black mt-0.5 tracking-tighter">(${pctYtd}%)</div>
                         </td>
                     </tr>
                     <tr id="${detailId}" class="hidden bg-slate-50/50">
