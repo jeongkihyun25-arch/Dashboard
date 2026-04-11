@@ -5,14 +5,12 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 
-# 1. 시크릿 정보
 USER_ID = os.environ.get('WOS_ID')
 USER_PW = os.environ.get('WOS_PW')
 current_dir = os.path.abspath(os.getcwd())
 temp_dir = os.path.join(current_dir, 'temp_downloads')
 os.makedirs(temp_dir, exist_ok=True)
 
-# 2. 브라우저 설정
 options = webdriver.ChromeOptions()
 options.add_argument('--headless=new')
 options.add_argument('--no-sandbox')
@@ -23,7 +21,7 @@ driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), opti
 driver.execute_cdp_cmd('Page.setDownloadBehavior', {'behavior': 'allow', 'downloadPath': temp_dir})
 
 try:
-    print("🚀 WOS 실적 수집 시작...")
+    print("🚀 WOS LT 실적 수집 (원본 유지 방식)...")
     driver.get('http://wos.bridgestone-korea.co.kr/')
     time.sleep(5)
     driver.find_element(By.ID, 'userID').send_keys(USER_ID)
@@ -31,7 +29,6 @@ try:
     driver.find_element(By.CLASS_NAME, 'login_btn').click()
     time.sleep(10) 
 
-    # 매출현황 메뉴 이동
     driver.get('http://wos.bridgestone-korea.co.kr/inqireMgmt/selngLedgrInqire2.do')
     time.sleep(10)
     
@@ -43,39 +40,27 @@ try:
     driver.find_element(By.CLASS_NAME, 'excel_btn').click()
     time.sleep(30)
 
-    # 3. 💡 [LT 비법] 데이터 합성 (Synthesis)
     files = [f for f in os.listdir(temp_dir) if not f.endswith('.crdownload')]
     if files:
         source_path = os.path.join(temp_dir, files[0])
-        ref_path = os.path.join(current_dir, "historical_data.xlsx") # 뼈대
-        target_path = os.path.join(current_dir, "current_sales.xlsx") # 완성본
+        target_path = os.path.join(current_dir, "current_sales.xlsx")
 
-        # WOS 데이터 읽기 (HTML/CP949)
-        with open(source_path, 'r', encoding='cp949', errors='ignore') as f:
-            new_df = pd.read_html(f, flavor='html5lib')[0]
-        
-        # 최신 실적을 거래처/사이즈/패턴별로 합산 (LT와 동일 로직)
-        new_agg = new_df.groupby(['거래처', 'SIZE', 'PTTN'])['합계수량'].sum().reset_index()
+        print("📊 WOS 다운로드 원본을 엑셀로 안전하게 변환합니다...")
+        # 💡 [핵심] 2중 방어망으로 파일 읽기 (합성 절대 안 함)
+        try:
+            new_df = pd.read_excel(source_path, engine='xlrd')
+        except:
+            with open(source_path, 'r', encoding='cp949', errors='ignore') as f:
+                new_df = pd.read_html(f, flavor='html5lib')[0]
 
-        # 기준표(Historical) 읽기
-        ref_df = pd.read_excel(ref_path)
+        # 원본 구조 그대로 저장
+        new_df.to_excel(target_path, index=False)
+        print("🎉 원본 변환 완료! current_sales.xlsx가 생성되었습니다.")
 
-        # 💡 매핑 엔진: 거래처+사이즈+패턴 세 가지가 모두 맞을 때만 숫자를 넣습니다.
-        def get_actual_sales(row):
-            match = new_agg[
-                (new_agg['거래처'].astype(str).str.strip() == str(row['거래처명']).strip()) &
-                (new_agg['SIZE'].astype(str).str.strip() == str(row['사이즈']).strip()) &
-                (new_agg['PTTN'].astype(str).str.strip() == str(row['패턴명']).strip())
-            ]
-            return match['합계수량'].sum() if not match.empty else 0
-
-        print("📊 실적 데이터 매핑 중...")
-        ref_df['2026년(당해)'] = ref_df.apply(get_actual_sales, axis=1)
-        
-        # 최종 완성본 저장
-        ref_df.to_excel(target_path, index=False)
-        print("🎉 합성 완료! current_sales.xlsx가 생성되었습니다.")
-
+except Exception as e:
+    print(f"❌ 치명적 에러 발생: {e}")
+    raise e
 finally:
     driver.quit()
-    shutil.rmtree(temp_dir)
+    if os.path.exists(temp_dir):
+        shutil.rmtree(temp_dir)
