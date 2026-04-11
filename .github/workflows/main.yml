@@ -2,11 +2,9 @@ name: Dashboard Data Auto Update
 
 on:
   schedule:
-    # 한국 시간(KST) 오전 9시는 UTC 00:00입니다.
-    - cron: '0 0 * * *' 
+    - cron: '0 0 * * *' # 한국 시간 오전 9시
   workflow_dispatch: 
 
-# [추가] 봇에게 리포지토리에 파일을 쓸 수 있는 권한을 줍니다.
 permissions:
   contents: write
 
@@ -25,7 +23,7 @@ jobs:
       - name: 필수 라이브러리 설치
         run: pip install -r requirements.txt
 
-      - name: 엑셀 데이터 수집 스크립트 실행
+      - name: 엑셀 데이터 수집 및 변환 실행
         env:
           WOS_ID: ${{ secrets.WOS_ID }}
           WOS_PW: ${{ secrets.WOS_PW }}
@@ -34,6 +32,5 @@ jobs:
       - name: 변경사항 깃허브에 커밋 및 푸시
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "매일 아침 자동 업데이트: current_sales.xls"
-          # [수정] main.py에서 생성하는 파일명과 똑같이 .xls로 맞춥니다.
-          file_pattern: 'current_sales.xls'
+          commit_message: "매일 자동 업데이트: 진짜 엑셀(.xlsx)로 변환 완료"
+          file_pattern: 'current_sales.xlsx' # 다시 xlsx로 변경
