@@ -6,15 +6,19 @@ on:
     - cron: '0 0 * * *' 
   workflow_dispatch: 
 
+# [추가] 봇에게 리포지토리에 파일을 쓸 수 있는 권한을 줍니다.
+permissions:
+  contents: write
+
 jobs:
   run-automation:
     runs-on: ubuntu-latest
     steps:
       - name: 리포지토리 체크아웃
-        uses: actions/checkout@v4 # v3에서 v4로 업데이트
+        uses: actions/checkout@v4
 
       - name: 파이썬 설정
-        uses: actions/setup-python@v5 # v4에서 v5로 업데이트
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
@@ -28,7 +32,8 @@ jobs:
         run: python main.py
 
       - name: 변경사항 깃허브에 커밋 및 푸시
-        uses: stefanzweifel/git-auto-commit-action@v5 # v4에서 v5로 업데이트
+        uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "매일 아침 자동 업데이트: current_sales.xlsx"
-          file_pattern: 'current_sales.xlsx'
+          commit_message: "매일 아침 자동 업데이트: current_sales.xls"
+          # [수정] main.py에서 생성하는 파일명과 똑같이 .xls로 맞춥니다.
+          file_pattern: 'current_sales.xls'
