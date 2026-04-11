@@ -2,33 +2,33 @@ name: Dashboard Data Auto Update
 
 on:
   schedule:
-    # 한국 시간(KST) 오전 9시는 UTC(영국 시간) 00:00입니다.
+    # 한국 시간(KST) 오전 9시는 UTC 00:00입니다.
     - cron: '0 0 * * *' 
-  workflow_dispatch: # 직접 실행 버튼을 활성화합니다.
+  workflow_dispatch: 
 
 jobs:
   run-automation:
-    runs-on: ubuntu-latest # 최신 리눅스 환경에서 실행합니다.
+    runs-on: ubuntu-latest
     steps:
       - name: 리포지토리 체크아웃
-        uses: actions/checkout@v3 # 현재 리포지토리 파일들을 가져옵니다.
+        uses: actions/checkout@v4 # v3에서 v4로 업데이트
 
       - name: 파이썬 설정
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5 # v4에서 v5로 업데이트
         with:
           python-version: '3.10'
 
       - name: 필수 라이브러리 설치
-        run: pip install -r requirements.txt # selenium, webdriver-manager 설치
+        run: pip install -r requirements.txt
 
       - name: 엑셀 데이터 수집 스크립트 실행
         env:
-          WOS_ID: ${{ secrets.WOS_ID }} # 아까 설정한 아이디 시크릿
-          WOS_PW: ${{ secrets.WOS_PW }} # 아까 설정한 비밀번호 시크릿
-        run: python main.py # 작성한 파이썬 코드 실행
+          WOS_ID: ${{ secrets.WOS_ID }}
+          WOS_PW: ${{ secrets.WOS_PW }}
+        run: python main.py
 
       - name: 변경사항 깃허브에 커밋 및 푸시
-        uses: stefanzweifel/git-auto-commit-action@v4
+        uses: stefanzweifel/git-auto-commit-action@v5 # v4에서 v5로 업데이트
         with:
           commit_message: "매일 아침 자동 업데이트: current_sales.xlsx"
-          file_pattern: 'current_sales.xlsx' # 이 파일의 변화만 감지해서 덮어씌웁니다.
+          file_pattern: 'current_sales.xlsx'
