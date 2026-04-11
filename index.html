@@ -33,7 +33,7 @@
         
         .table-scroll { -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
         
-        /* 툴팁 사이즈 및 여백 최적화 */
+        /* 💡 툴팁 모바일/PC 최적화 (너비 고정, 줄바꿈 방지) */
         .tooltip-text { transition: opacity 0.2s ease, transform 0.2s ease; z-index: 100; word-break: keep-all; line-height: 1.4; }
         @media (hover: hover) {
             .group:hover .tooltip-text { opacity: 1; transform: translateY(0) translateX(-50%); pointer-events: auto; }
@@ -135,7 +135,7 @@
                         <div id="attainment-bar" class="bg-gradient-to-r from-emerald-400 to-teal-400 h-full rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(52,211,153,0.5)]" style="width: 0%"></div>
                     </div>
                 </div>
-                <p class="text-[8px] md:text-[10px] text-slate-400 relative z-10 tracking-tighter md:tracking-normal">비교: 현재 YTD 실적 vs <span class="text-emerald-400 font-bold">과거 5년 동기간(누적) 평균치</span></p>
+                <p class="text-[8px] md:text-[10px] text-slate-400 relative z-10 tracking-tighter md:tracking-normal">비교: 현재 누계 실적 vs <span class="text-emerald-400 font-bold">5년 평균 누적량</span></p>
             </div>
         </div>
 
@@ -166,36 +166,36 @@
                             
                             <th class="sortable px-3 md:px-6 py-3 md:py-4 text-right group relative" onclick="setSort('ly')" ontouchstart="showTooltip(this, 'center')" ontouchend="hideTooltip(this)">
                                 전년 동월 <span id="sort-icon-ly" class="inline-block w-2 md:w-3 text-center"></span>
-                                <div class="tooltip-text opacity-0 pointer-events-none transform translate-y-1 -translate-x-1/2 absolute top-full left-1/2 mt-1 w-28 bg-slate-800 text-white text-[9px] rounded-lg py-1.5 px-2 text-center shadow-lg z-40">
+                                <div class="tooltip-text opacity-0 pointer-events-none transform translate-y-1 -translate-x-1/2 absolute top-full left-1/2 mt-1 w-[110px] bg-slate-800 text-white text-[9px] rounded-lg py-1.5 px-1.5 text-center shadow-lg z-40">
                                     작년 같은 달(1개월)<br>순수 판매량
                                 </div>
                             </th>
                             
                             <th class="sortable px-3 md:px-6 py-3 md:py-4 text-right group relative" onclick="setSort('cm')" ontouchstart="showTooltip(this, 'center')" ontouchend="hideTooltip(this)">
                                 당월 판매 <span id="sort-icon-cm" class="inline-block w-2 md:w-3 text-center"></span>
-                                <div class="tooltip-text opacity-0 pointer-events-none transform translate-y-1 -translate-x-1/2 absolute top-full left-1/2 mt-1 w-28 bg-slate-800 text-white text-[9px] rounded-lg py-1.5 px-2 text-center shadow-lg z-40">
+                                <div class="tooltip-text opacity-0 pointer-events-none transform translate-y-1 -translate-x-1/2 absolute top-full left-1/2 mt-1 w-[110px] bg-slate-800 text-white text-[9px] rounded-lg py-1.5 px-1.5 text-center shadow-lg z-40">
                                     올해 선택 달(1개월)<br>순수 판매량
                                 </div>
                             </th>
                             
                             <th class="sortable px-3 md:px-6 py-3 md:py-4 text-right group relative" onclick="setSort('yoy')" ontouchstart="showTooltip(this, 'center')" ontouchend="hideTooltip(this)">
                                 전년비 <span id="sort-icon-yoy" class="inline-block w-2 md:w-3 text-center"></span>
-                                <div class="tooltip-text opacity-0 pointer-events-none transform translate-y-1 -translate-x-1/2 absolute top-full left-1/2 mt-1 w-32 bg-slate-800 text-white text-[9px] rounded-lg py-1.5 px-2 text-center shadow-lg z-40">
+                                <div class="tooltip-text opacity-0 pointer-events-none transform translate-y-1 -translate-x-1/2 absolute top-full left-1/2 mt-1 w-[130px] bg-slate-800 text-white text-[9px] rounded-lg py-1.5 px-1.5 text-center shadow-lg z-40">
                                     당월 판매량이 작년 대비<br>얼마나 성장했는지 표시
                                 </div>
                             </th>
                             
                             <th class="sortable px-4 md:px-8 py-3 md:py-4 text-right bg-red-50/50 text-red-900 border-l border-slate-200 group relative" onclick="setSort('ytd')" ontouchstart="showTooltip(this, 'center')" ontouchend="hideTooltip(this)">
                                 올해 누계 <span id="sort-icon-ytd" class="inline-block w-2 md:w-3 text-center">▼</span>
-                                <div class="tooltip-text opacity-0 pointer-events-none transform translate-y-1 -translate-x-1/2 absolute top-full left-1/2 mt-1 w-36 bg-slate-800 text-white text-[9px] rounded-lg py-1.5 px-2 text-center shadow-lg z-40">
-                                    올해 1월부터 누적된 판매량<br><span class="text-red-300 font-normal">*( ) 안은 전년 동기간 대비 성장률</span>
+                                <div class="tooltip-text opacity-0 pointer-events-none transform translate-y-1 -translate-x-1/2 absolute top-full left-1/2 mt-1 w-[160px] bg-slate-800 text-white text-[9px] rounded-lg py-1.5 px-2 text-center shadow-lg z-40">
+                                    올해 1월부터의 누적 판매량<br><span class="text-red-300 font-normal">*( )는 작년 동기간 대비 성장률</span>
                                 </div>
                             </th>
                             
                             <th class="sortable px-4 md:px-8 py-3 md:py-4 text-right group relative" onclick="setSort('avg')" ontouchstart="showTooltip(this, 'right')" ontouchend="hideTooltip(this)">
                                 5년 평균비 <span id="sort-icon-avg" class="inline-block w-2 md:w-3 text-center"></span>
-                                <div class="tooltip-text align-right opacity-0 pointer-events-none transform translate-y-1 absolute top-full right-0 mt-1 w-44 bg-slate-800 text-white text-[9px] rounded-lg py-1.5 px-2 text-center shadow-lg z-40">
-                                    과거 5년 동기간 <span class="text-emerald-300">누적 평균 판매량(목표)</span><br>대비 현재 누계 실적의 도달률
+                                <div class="tooltip-text align-right opacity-0 pointer-events-none transform translate-y-1 absolute top-full right-0 mt-1 w-[160px] bg-slate-800 text-white text-[9px] rounded-lg py-1.5 px-2 text-center shadow-lg z-40">
+                                    과거 5년 동기간의<br><span class="text-emerald-300">평균 누적 판매량</span> 대비<br>현재 누계 실적 도달률
                                 </div>
                             </th>
                         </tr>
@@ -207,6 +207,7 @@
     </main>
 
     <script>
+        // 💡 툴팁 터치 로직 
         function showTooltip(el, align) {
             const tooltip = el.querySelector('.tooltip-text');
             if(tooltip) { 
@@ -516,7 +517,6 @@
             return `<span class="text-slate-400 font-bold bg-slate-100 px-1.5 md:px-2 py-0.5 rounded">동일</span>`;
         };
 
-        // 💡 괄호 안에 들어갈 YTD YoY 텍스트
         const getInlineYoYHTML = (cur, prev) => {
             if (prev === 0 && cur > 0) return `<span class="text-blue-500 font-bold text-[9px] md:text-[11px] ml-1 whitespace-nowrap tracking-tighter">(신규)</span>`;
             if (prev === 0 && cur === 0) return ``;
@@ -636,7 +636,7 @@
                 const detailId = `detail-${idx}`;
                 const choStr = getChosung(n).replace(/\s+/g, '');
                 
-                // 💡 올해 누계(YTD) 괄호 포함 표출, 💡 5년 평균비 타겟 수량 포함 표출
+                // 💡 작년 누적 수량 추가 & 5년 평균 누적량 명시
                 htmlBuffer += `
                     <tr class="dealer-row hover:bg-slate-50/80 cursor-pointer transition-colors group" data-name="${n}" data-cho="${choStr}" onclick="toggleRow('${detailId}')">
                         <td class="px-3 md:px-10 py-3 md:py-4 text-slate-700 font-bold flex items-center gap-1.5 md:gap-3 sticky left-0 top-0 bg-white group-hover:bg-slate-50/80 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-r border-slate-100 max-w-[120px] md:max-w-[220px]">
@@ -647,14 +647,17 @@
                         <td class="px-3 md:px-6 py-3 md:py-4 text-right text-slate-700 font-bold">${Math.ceil(d.m).toLocaleString()}</td>
                         <td class="px-3 md:px-6 py-3 md:py-4 text-right text-[10px] md:text-xs tracking-tight">${getYoYHTML(d.m, d.m_ly)}</td>
                         
-                        <td class="px-4 md:px-8 py-3 md:py-4 text-right bg-red-50/30 border-l border-slate-100 whitespace-nowrap">
-                            <span class="bstk-red font-black text-sm md:text-base">${Math.ceil(d.y).toLocaleString()}</span>
-                            ${getInlineYoYHTML(d.y, d.y_ly)}
+                        <td class="px-4 md:px-8 py-2 md:py-3 text-right bg-red-50/30 border-l border-slate-100 whitespace-nowrap">
+                            <div class="flex items-center justify-end">
+                                <span class="bstk-red font-black text-sm md:text-base">${Math.ceil(d.y).toLocaleString()}</span>
+                                ${getInlineYoYHTML(d.y, d.y_ly)}
+                            </div>
+                            <div class="text-[8px] md:text-[10px] text-slate-500 font-medium mt-0.5 tracking-tighter">작년 누적: ${Math.ceil(d.y_ly).toLocaleString()}</div>
                         </td>
 
                         <td class="px-4 md:px-8 py-2 md:py-3 text-right">
                             <div class="font-black text-sm md:text-base ${dPct >= 100 ? 'text-emerald-500' : 'text-slate-500'}">${dPct}%</div>
-                            <div class="text-[8px] md:text-[10px] text-slate-400 font-medium mt-0.5 tracking-tighter">목표: ${Math.ceil(d.a).toLocaleString()}</div>
+                            <div class="text-[8px] md:text-[10px] text-slate-400 font-medium mt-0.5 tracking-tighter">5년 평균 누적: ${Math.ceil(d.a).toLocaleString()}</div>
                         </td>
                     </tr>
                     <tr id="${detailId}" class="hidden bg-slate-50/50">
