@@ -25,6 +25,14 @@
         ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* 툴팁 애니메이션 */
+        .tooltip-text { transition: opacity 0.2s ease, transform 0.2s ease; }
+        .group:hover .tooltip-text { opacity: 1; transform: translateY(0) translateX(-50%); pointer-events: auto; }
+        
+        /* 헤더 클릭(정렬) 애니메이션 */
+        th.sortable { cursor: pointer; transition: background-color 0.2s; user-select: none; }
+        th.sortable:hover { background-color: rgba(226, 232, 240, 0.5); }
     </style>
 </head>
 <body class="text-slate-800 antialiased overflow-x-hidden selection:bg-red-100 selection:text-red-900">
@@ -107,7 +115,7 @@
                 <div class="w-full bg-slate-700/50 h-3 rounded-full overflow-hidden mb-4 backdrop-blur-sm border border-slate-600/50">
                     <div id="attainment-bar" class="bg-gradient-to-r from-emerald-400 to-teal-400 h-full rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(52,211,153,0.5)]" style="width: 0%"></div>
                 </div>
-                <p class="text-[10px] text-slate-400">비교: 전체 실적 vs <span class="text-emerald-400 font-bold">월별 5년 평균 합계</span></p>
+                <p class="text-[10px] text-slate-400">비교: 전체 시장 누계 vs <span class="text-emerald-400 font-bold">월별 5년 평균 합계</span></p>
             </div>
         </div>
 
@@ -115,7 +123,7 @@
             <div class="px-8 py-6 border-b border-slate-100 bg-white flex flex-col md:flex-row justify-between items-center gap-4">
                 <div class="flex items-center gap-3">
                     <h3 class="font-black text-slate-800 text-lg">딜러별 판매추이</h3>
-                    <span class="px-2.5 py-1 bg-slate-100 text-slate-500 rounded-lg text-[10px] font-bold uppercase tracking-wide">누계순</span>
+                    <span class="px-2.5 py-1 bg-slate-100 text-slate-500 rounded-lg text-[10px] font-bold uppercase tracking-wide">클릭하여 정렬 가능</span>
                 </div>
                 
                 <div class="relative w-full md:w-80">
@@ -128,16 +136,36 @@
                 </div>
             </div>
             
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto pb-10">
                 <table class="w-full text-left whitespace-nowrap min-w-[1000px]">
                     <thead>
-                        <tr class="bg-slate-50/50 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                        <tr class="bg-slate-50/50 text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-slate-200">
                             <th class="px-10 py-4">딜러명 (클릭 시 상세)</th>
-                            <th class="px-6 py-4 text-right">전년 동월</th>
-                            <th class="px-6 py-4 text-right text-slate-600">당월 판매</th>
-                            <th class="px-6 py-4 text-right">전년비(YoY)</th>
-                            <th class="px-8 py-4 text-right bg-red-50/30 text-red-900 border-l border-slate-100">올해 누계</th>
-                            <th class="px-8 py-4 text-right">5년 평균비</th>
+                            
+                            <th class="sortable px-6 py-4 text-right group relative" onclick="setSort('ly')">
+                                전년 동월 <span id="sort-icon-ly" class="ml-1 inline-block w-3"></span>
+                                <div class="tooltip-text opacity-0 pointer-events-none transform translate-y-1 -translate-x-1/2 absolute bottom-full left-1/2 mb-2 w-32 bg-slate-800 text-white text-[10px] rounded-lg py-1.5 px-2 text-center shadow-lg z-20">작년 같은 달(1개월)의<br>순수 판매량입니다.</div>
+                            </th>
+                            
+                            <th class="sortable px-6 py-4 text-right group relative" onclick="setSort('cm')">
+                                당월 판매 <span id="sort-icon-cm" class="ml-1 inline-block w-3"></span>
+                                <div class="tooltip-text opacity-0 pointer-events-none transform translate-y-1 -translate-x-1/2 absolute bottom-full left-1/2 mb-2 w-32 bg-slate-800 text-white text-[10px] rounded-lg py-1.5 px-2 text-center shadow-lg z-20">올해 선택한 달(1개월)의<br>순수 판매량입니다.</div>
+                            </th>
+                            
+                            <th class="sortable px-6 py-4 text-right group relative" onclick="setSort('yoy')">
+                                전년비(YoY) <span id="sort-icon-yoy" class="ml-1 inline-block w-3"></span>
+                                <div class="tooltip-text opacity-0 pointer-events-none transform translate-y-1 -translate-x-1/2 absolute bottom-full left-1/2 mb-2 w-36 bg-slate-800 text-white text-[10px] rounded-lg py-1.5 px-2 text-center shadow-lg z-20">당월 판매량이 작년 동월 대비<br>얼마나 성장했는지 나타냅니다.</div>
+                            </th>
+                            
+                            <th class="sortable px-8 py-4 text-right bg-red-50/50 text-red-900 border-l border-slate-200 group relative" onclick="setSort('ytd')">
+                                올해 누계 <span id="sort-icon-ytd" class="ml-1 inline-block w-3">▼</span>
+                                <div class="tooltip-text opacity-0 pointer-events-none transform translate-y-1 -translate-x-1/2 absolute bottom-full left-1/2 mb-2 w-36 bg-slate-800 text-white text-[10px] rounded-lg py-1.5 px-2 text-center shadow-lg z-20">올해 1월부터 선택한 달까지의<br>총 누적 판매량입니다.</div>
+                            </th>
+                            
+                            <th class="sortable px-8 py-4 text-right group relative" onclick="setSort('avg')">
+                                5년 평균비 <span id="sort-icon-avg" class="ml-1 inline-block w-3"></span>
+                                <div class="tooltip-text opacity-0 pointer-events-none transform translate-y-1 -translate-x-1/2 absolute bottom-full left-1/2 mb-2 w-44 bg-slate-800 text-white text-[10px] rounded-lg py-1.5 px-2 text-center shadow-lg z-20">올해 누계 실적이<br>과거 5년 동기간 평균 실적 대비<br>몇 % 도달했는지 나타냅니다.</div>
+                            </th>
                         </tr>
                     </thead>
                     <tbody id="dealer-list" class="divide-y divide-slate-100 text-sm font-bold text-slate-700"></tbody>
@@ -157,8 +185,11 @@
 
         let rawCurrent = [], rawLastYear = [], rawHistory = [], filterSize = 'ALL', filterPattern = 'ALL', selectedMonth = new Date().getMonth() + 1;
         let uniqueDealers = [];
+        
+        // 정렬 관련 변수
+        let sortCol = 'ytd'; // 기본 정렬: 올해 누계
+        let sortDesc = true; // 기본: 내림차순
 
-        // 💡 초성 추출기 (알고리즘 업그레이드: 띄어쓰기 무시)
         const CHOSUNG = ["ㄱ", "ㄲ", "ㄴ", "ㄷ", "ㄸ", "ㄹ", "ㅁ", "ㅂ", "ㅃ", "ㅅ", "ㅆ", "ㅇ", "ㅈ", "ㅉ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
         function getChosung(str) {
             if (!str) return "";
@@ -209,7 +240,9 @@
                 const ab = await res.arrayBuffer();
                 const wb = XLSX.read(new Uint8Array(ab), {type: 'array'});
                 return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
-            } catch (e) { return []; }
+            } catch (e) {
+                return [];
+            }
         }
 
         async function init() {
@@ -340,14 +373,40 @@
             render();
         }
 
-        // 💡 텍스트+초성 통합 검색엔진 세팅
+        // 💡 헤더 클릭 시 정렬 상태 변경
+        window.setSort = function(col) {
+            if (sortCol === col) {
+                sortDesc = !sortDesc; // 방향 토글
+            } else {
+                sortCol = col;
+                sortDesc = true; // 새 컬럼 클릭 시 기본은 내림차순
+            }
+            render();
+        }
+
+        // 💡 정렬 아이콘 UI 업데이트
+        function updateSortIcons() {
+            const cols = ['ly', 'cm', 'yoy', 'ytd', 'avg'];
+            cols.forEach(c => {
+                const icon = document.getElementById(`sort-icon-${c}`);
+                if(icon) {
+                    if (sortCol === c) {
+                        icon.innerText = sortDesc ? '▼' : '▲';
+                        icon.classList.add('text-slate-800');
+                    } else {
+                        icon.innerText = '';
+                        icon.classList.remove('text-slate-800');
+                    }
+                }
+            });
+        }
+
         function setupSearch() {
             const input = document.getElementById('search-input');
             const list = document.getElementById('autocomplete-list');
             if(!input || !list) return;
 
             input.addEventListener('input', function() {
-                // 검색어 띄어쓰기 완전 무시
                 const val = this.value.trim().toLowerCase().replace(/\s+/g, '');
                 const choVal = getChosung(val);
                 list.innerHTML = '';
@@ -358,7 +417,6 @@
                     return;
                 }
 
-                // 딜러명도 띄어쓰기 무시하고 비교
                 const matches = uniqueDealers.filter(d => {
                     const cleanName = d.name.toLowerCase().replace(/\s+/g, '');
                     const cleanCho = d.chosung.replace(/\s+/g, '');
@@ -390,14 +448,12 @@
             });
         }
 
-        // 💡 리스트 필터링 (글자/초성 동시 캐치)
         function filterTable(term, choTerm = '') {
             term = String(term).toLowerCase().replace(/\s+/g, '');
             document.querySelectorAll('#dealer-list tr.dealer-row').forEach(tr => {
                 const name = tr.getAttribute('data-name').toLowerCase().replace(/\s+/g, '');
                 const choName = getChosung(name).replace(/\s+/g, '');
                 
-                // 단어가 포함되거나, 초성이 포함되면 표출
                 if (name.includes(term) || (choTerm && choName.includes(choTerm))) {
                     tr.style.display = '';
                 } else {
@@ -437,6 +493,8 @@
         };
 
         function render() {
+            updateSortIcons(); // 정렬 UI 업데이트
+
             const cur = rawCurrent.filter(r => matchFilterSize(r.s, filterSize) && matchPattern(r.p, filterPattern));
             const ly = rawLastYear.filter(r => matchFilterSize(r.s, filterSize) && matchPattern(r.p, filterPattern));
             const his = rawHistory.filter(r => matchFilterSize(r.s, filterSize)); 
@@ -489,12 +547,35 @@
             document.getElementById('attainment-pct').innerText = pct + "%";
             document.getElementById('attainment-bar').style.width = Math.min(pct, 100) + "%";
 
+            // 💡 필터링 된 딜러 리스트 추출 및 정렬 로직
+            let entries = Object.entries(dMap).filter(([n, d]) => !(d.y === 0 && d.m === 0 && d.m_ly === 0 && d.a === 0));
+
+            entries.sort((a, b) => {
+                let valA, valB;
+                let dA = a[1], dB = b[1];
+
+                if (sortCol === 'ly') {
+                    valA = dA.m_ly; valB = dB.m_ly;
+                } else if (sortCol === 'cm') {
+                    valA = dA.m; valB = dB.m;
+                } else if (sortCol === 'yoy') {
+                    // 전년비 계산 로직 (Infinity 방지)
+                    valA = dA.m_ly === 0 ? (dA.m > 0 ? 999 : 0) : (dA.m / dA.m_ly);
+                    valB = dB.m_ly === 0 ? (dB.m > 0 ? 999 : 0) : (dB.m / dB.m_ly);
+                } else if (sortCol === 'avg') {
+                    valA = dA.a === 0 ? 0 : (dA.y / dA.a);
+                    valB = dB.a === 0 ? 0 : (dB.y / dB.a);
+                } else { // ytd
+                    valA = dA.y; valB = dB.y;
+                }
+
+                return sortDesc ? valB - valA : valA - valB;
+            });
+
             const tbody = document.getElementById('dealer-list');
             tbody.innerHTML = '';
             
-            Object.entries(dMap).sort((a,b) => b[1].y - a[1].y).forEach(([n, d], idx) => {
-                if(d.y === 0 && d.m === 0 && d.m_ly === 0 && d.a === 0) return;
-
+            entries.forEach(([n, d], idx) => {
                 const dPct = d.a > 0 ? Math.ceil((d.y/d.a)*100) : 0;
                 const detailId = `detail-${idx}`;
                 
@@ -537,7 +618,6 @@
             
             const searchInput = document.getElementById('search-input');
             if(searchInput) {
-                // 검색창에 입력값이 있으면 그 상태 그대로 필터링 유지
                 const term = searchInput.value.trim().toLowerCase().replace(/\s+/g, '');
                 const choTerm = getChosung(term);
                 filterTable(term, choTerm);
