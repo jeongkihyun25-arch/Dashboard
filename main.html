@@ -684,7 +684,7 @@
                 // 상세 리스트 수량 많은 순 정렬
                 const sortedDetails = d.details.sort((a,b) => b.y - a.y);
                 
-                // 💡 [핵심 핀셋 수정] 딜러명 글씨 크기 약간 축소 및 클릭 시 toggleDealerName 연동
+                // 💡 [핵심 핀셋 수정] 모바일에서 스크롤되지 않도록 sticky left-0 적용 및 텍스트 수정
                 buffer += `
                     <tr class="dealer-row hover:bg-slate-50/80 cursor-pointer transition-colors group" data-name="${n}" data-cho="${cho}" onclick="toggleRow('${detailId}'); toggleDealerName('name-${idx}')">
                         <td class="px-3 md:px-8 py-3 md:py-4 text-slate-700 font-bold flex items-center gap-1.5 md:gap-3 sticky left-0 top-0 bg-white group-hover:bg-slate-50/80 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-r border-slate-100 max-w-[120px] md:max-w-[200px]">
@@ -713,27 +713,29 @@
                         </td>
                     </tr>
                     <tr id="${detailId}" class="hidden bg-slate-50/50">
-                        <td colspan="7" class="px-4 md:px-8 py-3 md:py-4 pb-4 md:pb-6 border-b border-slate-100">
-                            <div class="bg-white rounded-xl md:rounded-2xl border border-slate-200 p-3 md:p-4 shadow-sm">
-                                <div class="flex flex-col divide-y divide-slate-50">
-                                    ${sortedDetails.map(det => `
-                                        <div class="flex justify-between items-center py-2 px-1 md:px-2 hover:bg-slate-50/50 transition-colors rounded-lg">
-                                            <div class="flex items-baseline gap-1.5 md:gap-2">
-                                                <strong class="text-slate-700 text-[10px] md:text-sm tracking-tight">${det.s}</strong>
-                                                <span class="text-slate-400 text-[9px] md:text-xs font-medium">${det.p}</span>
-                                            </div>
-                                            <div class="flex items-center gap-3 md:gap-6 text-right">
-                                                <div class="flex flex-col items-end justify-center min-w-[35px] md:min-w-[45px]">
-                                                    <span class="text-[8px] md:text-[9px] text-slate-400 font-bold leading-none mb-1">당월</span>
-                                                    <span class="text-slate-600 font-bold text-[10px] md:text-xs leading-none">${Math.ceil(det.m).toLocaleString()}</span>
+                        <td colspan="7" class="p-0 border-b border-slate-100 relative">
+                            <div class="sticky left-0 inline-block p-3 md:p-4 w-[calc(100vw-8px)] md:w-full box-border">
+                                <div class="bg-white rounded-xl md:rounded-2xl border border-slate-200 p-2 md:p-4 shadow-sm w-full">
+                                    <div class="flex flex-col divide-y divide-slate-50">
+                                        ${sortedDetails.map(det => `
+                                            <div class="flex justify-between items-center py-2 px-1 md:px-2 hover:bg-slate-50/50 transition-colors rounded-lg">
+                                                <div class="flex items-baseline gap-1.5 md:gap-2 mr-2">
+                                                    <strong class="text-slate-700 text-[10px] md:text-sm tracking-tight">${det.s}</strong>
+                                                    <span class="text-slate-400 text-[9px] md:text-xs font-medium">${det.p}</span>
                                                 </div>
-                                                <div class="flex flex-col items-end justify-center min-w-[35px] md:min-w-[45px]">
-                                                    <span class="text-[8px] md:text-[9px] text-slate-400 font-bold leading-none mb-1">누적</span>
-                                                    <span class="bstk-red font-black text-[10px] md:text-xs leading-none">${Math.ceil(det.y).toLocaleString()}</span>
+                                                <div class="flex items-center gap-2 md:gap-6 text-right shrink-0">
+                                                    <div class="flex flex-col items-end justify-center min-w-[35px] md:min-w-[45px]">
+                                                        <span class="text-[8px] md:text-[9px] text-slate-400 font-bold leading-none mb-1 whitespace-nowrap">당월</span>
+                                                        <span class="text-slate-600 font-bold text-[10px] md:text-xs leading-none">${Math.ceil(det.m).toLocaleString()}</span>
+                                                    </div>
+                                                    <div class="flex flex-col items-end justify-center min-w-[50px] md:min-w-[60px]">
+                                                        <span class="text-[8px] md:text-[9px] text-slate-400 font-bold leading-none mb-1 whitespace-nowrap">누적<span class="font-normal text-[7px] md:text-[8px] tracking-tighter">(1월~)</span></span>
+                                                        <span class="bstk-red font-black text-[10px] md:text-xs leading-none">${Math.ceil(det.y).toLocaleString()}</span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    `).join('')}
+                                        `).join('')}
+                                    </div>
                                 </div>
                             </div>
                         </td>
